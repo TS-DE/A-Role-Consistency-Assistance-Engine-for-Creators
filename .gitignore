@@ -21,6 +21,9 @@ bm25_*.pkl
 # 原始语料：体积大 + 版权，本地留着，不进仓库
 data/corpus/raw/
 
+# 下载的原始电子书（体积大；入库走 data/corpus/ 的清洗产物）
+SherlockHolmes_ebook/
+
 # 本地临时
 *.log
 .DS_Store

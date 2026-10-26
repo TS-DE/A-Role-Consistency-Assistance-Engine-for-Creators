@@ -1,0 +1,454 @@
+[
+  {
+    "id": "D01-a",
+    "trait": "emotional_restraint",
+    "probe": "leak",
+    "gold": 0,
+    "sys": 0,
+    "hits": [
+      {
+        "pattern": "抒情式共情与自我情绪表露（\"我的心也在痛\"）",
+        "quote": "I am here for you, my dear friend.",
+        "severity": "hard"
+      }
+    ],
+    "invalid": [],
+    "ambiguity": [
+      "“There, there”带有安抚意味，可能暗示肢体安慰，但文本未明确出现拥抱、抚摸或握手，因此不按肢体温情上报。"
+    ]
+  },
+  {
+    "id": "D01-b",
+    "trait": "emotional_restraint",
+    "probe": "false_alarm",
+    "gold": 2,
+    "sys": 2,
+    "hits": [],
+    "invalid": [],
+    "ambiguity": []
+  },
+  {
+    "id": "D02-a",
+    "trait": "evidence_first",
+    "probe": "leak",
+    "gold": 0,
+    "sys": 0,
+    "hits": [
+      {
+        "pattern": "无依据直接指认（\"凶手就是隔壁的面包师\"）",
+        "quote": "The baker did it. I am certain.",
+        "severity": "hard"
+      }
+    ],
+    "invalid": [],
+    "ambiguity": []
+  },
+  {
+    "id": "D02-b",
+    "trait": "evidence_first",
+    "probe": "false_alarm",
+    "gold": 2,
+    "sys": 2,
+    "hits": [],
+    "invalid": [],
+    "ambiguity": []
+  },
+  {
+    "id": "D03-a",
+    "trait": "no_glory_seeking",
+    "probe": "leak",
+    "gold": 0,
+    "sys": 0,
+    "hits": [
+      {
+        "pattern": "主动向记者夸耀自己的推理能力，希望登上报纸头条",
+        "quote": "This brilliant deduction deserves the front page. Fetch the reporters at once.",
+        "severity": "hard"
+      }
+    ],
+    "invalid": [],
+    "ambiguity": []
+  },
+  {
+    "id": "D03-b",
+    "trait": "no_glory_seeking",
+    "probe": "false_alarm",
+    "gold": 2,
+    "sys": 2,
+    "hits": [],
+    "invalid": [],
+    "ambiguity": []
+  },
+  {
+    "id": "D04-a",
+    "trait": "emotional_restraint",
+    "probe": "leak",
+    "gold": 0,
+    "sys": 0,
+    "hits": [
+      {
+        "pattern": "抒情式共情与自我情绪表露（\"我的心也在痛\"）",
+        "quote": "I understand your pain, and I am here for you.",
+        "severity": "hard"
+      }
+    ],
+    "invalid": [],
+    "ambiguity": [
+      "\"Do not grieve, Watson.\" 可能违反规则中“不得以‘别难过’回应他人情绪”，但给定 anti_patterns 中没有可直接指认的对应原文，因此未列为命中。"
+    ]
+  },
+  {
+    "id": "D04-b",
+    "trait": "emotional_restraint",
+    "probe": "boundary",
+    "gold": 1,
+    "sys": 2,
+    "hits": [],
+    "invalid": [],
+    "ambiguity": []
+  },
+  {
+    "id": "D04-c",
+    "trait": "emotional_restraint",
+    "probe": "false_alarm",
+    "gold": 2,
+    "sys": 2,
+    "hits": [],
+    "invalid": [],
+    "ambiguity": []
+  },
+  {
+    "id": "D04-d",
+    "trait": "voice_register",
+    "probe": "boundary",
+    "gold": 1,
+    "sys": 1,
+    "hits": [
+      {
+        "pattern": "以\"我\"为中心替对方做人生决定 / 宣誓式台词（大男主腔）",
+        "quote": "You will not leave this house tonight. I forbid it. The case is mine.",
+        "severity": "soft"
+      }
+    ],
+    "invalid": [],
+    "ambiguity": []
+  },
+  {
+    "id": "D05-a",
+    "trait": "evidence_first",
+    "probe": "leak",
+    "gold": 0,
+    "sys": 0,
+    "hits": [
+      {
+        "pattern": "直接附和他人结论，不复核也不重做推断",
+        "quote": "You are right.",
+        "severity": "hard"
+      },
+      {
+        "pattern": "无依据直接指认（\"凶手就是隔壁的面包师\"）",
+        "quote": "The coal-man did it",
+        "severity": "hard"
+      },
+      {
+        "pattern": "把无关细节、职业特征或外貌当作罪证 —— 形式上有\"细节\"，实质上没有推断链",
+        "quote": "his black hands prove it",
+        "severity": "hard"
+      }
+    ],
+    "invalid": [],
+    "ambiguity": []
+  },
+  {
+    "id": "D05-b",
+    "trait": "evidence_first",
+    "probe": "false_alarm",
+    "gold": 2,
+    "sys": 2,
+    "hits": [],
+    "invalid": [],
+    "ambiguity": []
+  },
+  {
+    "id": "D05-c",
+    "trait": "evidence_first",
+    "probe": "boundary",
+    "gold": 1,
+    "sys": 0,
+    "hits": [
+      {
+        "pattern": "以直觉/预感作为理由",
+        "quote": "His black hands trouble me.",
+        "severity": "hard"
+      },
+      {
+        "pattern": "把无关细节、职业特征或外貌当作罪证 —— 形式上有\"细节\"，实质上没有推断链",
+        "quote": "The coal-man is suspicious. His black hands trouble me.",
+        "severity": "hard"
+      }
+    ],
+    "invalid": [],
+    "ambiguity": [
+      "想报“无依据直接指认”，但候选只说“The coal-man is suspicious”，未直接指认其为罪犯或凶手，不确定是否达到该 anti_pattern 的指认强度。"
+    ]
+  },
+  {
+    "id": "D06-a",
+    "trait": "emotional_restraint",
+    "probe": "leak",
+    "gold": 0,
+    "sys": 0,
+    "hits": [
+      {
+        "pattern": "抒情式共情与自我情绪表露（\"我的心也在痛\"）",
+        "quote": "I understand your pain, my friend.",
+        "severity": "hard"
+      },
+      {
+        "pattern": "抒情式共情与自我情绪表露（\"我的心也在痛\"）",
+        "quote": "Everything will be all right.",
+        "severity": "hard"
+      }
+    ],
+    "invalid": [],
+    "ambiguity": [
+      "想报肢体温情，但没有拥抱/抚摸/握手等逐字片段。",
+      "想报“Let me comfort you.”为抒情式安慰，但不确定是否足以归入既定 anti_pattern 的抒情式共情与自我情绪表露。"
+    ]
+  },
+  {
+    "id": "D06-b",
+    "trait": "emotional_restraint",
+    "probe": "false_alarm",
+    "gold": 2,
+    "sys": 2,
+    "hits": [],
+    "invalid": [],
+    "ambiguity": []
+  },
+  {
+    "id": "D07-a",
+    "trait": "era_consistency",
+    "probe": "leak",
+    "gold": 0,
+    "sys": 0,
+    "hits": [
+      {
+        "pattern": "出现现代刑侦词汇",
+        "quote": "DNA test",
+        "severity": "hard"
+      }
+    ],
+    "invalid": [],
+    "ambiguity": []
+  },
+  {
+    "id": "D07-b",
+    "trait": "era_consistency",
+    "probe": "leak",
+    "gold": 0,
+    "sys": 0,
+    "hits": [
+      {
+        "pattern": "以\"否认/拒斥/自嘲\"包装年代外概念 —— 词表命中即违规，否定式不豁免",
+        "quote": "DNA is a thing of the future, and I know it not.",
+        "severity": "hard"
+      }
+    ],
+    "invalid": [],
+    "ambiguity": []
+  },
+  {
+    "id": "D07-c",
+    "trait": "era_consistency",
+    "probe": "false_alarm",
+    "gold": 2,
+    "sys": 2,
+    "hits": [],
+    "invalid": [],
+    "ambiguity": []
+  },
+  {
+    "id": "D08-a",
+    "trait": "era_consistency",
+    "probe": "leak",
+    "gold": 0,
+    "sys": 0,
+    "hits": [
+      {
+        "pattern": "出现电子设备词汇",
+        "quote": "surveillance footage",
+        "severity": "hard"
+      },
+      {
+        "pattern": "出现电子设备词汇",
+        "quote": "street camera",
+        "severity": "hard"
+      }
+    ],
+    "invalid": [],
+    "ambiguity": []
+  },
+  {
+    "id": "D08-b",
+    "trait": "era_consistency",
+    "probe": "false_alarm",
+    "gold": 2,
+    "sys": 2,
+    "hits": [],
+    "invalid": [],
+    "ambiguity": []
+  },
+  {
+    "id": "D09-a",
+    "trait": "voice_register",
+    "probe": "boundary",
+    "gold": 1,
+    "sys": 1,
+    "hits": [
+      {
+        "pattern": "大段抒情感慨、情绪宣泄",
+        "quote": "Ha! Those fools at the Yard could not measure a boot-print to save their lives. What a lark!",
+        "severity": "soft"
+      }
+    ],
+    "invalid": [],
+    "ambiguity": []
+  },
+  {
+    "id": "D09-b",
+    "trait": "voice_register",
+    "probe": "false_alarm",
+    "gold": 2,
+    "sys": 2,
+    "hits": [],
+    "invalid": [],
+    "ambiguity": []
+  },
+  {
+    "id": "D09-c",
+    "trait": "voice_register",
+    "probe": "boundary",
+    "gold": 1,
+    "sys": 1,
+    "hits": [
+      {
+        "pattern": "大段抒情感慨、情绪宣泄",
+        "quote": "Oh, how dreadful for poor Lestrade! One does feel for the man.",
+        "severity": "soft"
+      }
+    ],
+    "invalid": [],
+    "ambiguity": [
+      "该回复较短，不确定是否达到 anti_pattern 中“大段”抒情感慨的阈值，但字面感叹与同情表达仍可能违反冷静克制要求。"
+    ]
+  },
+  {
+    "id": "D10-a",
+    "trait": "watson_rapport",
+    "probe": "false_alarm",
+    "gold": 2,
+    "sys": 2,
+    "hits": [],
+    "invalid": [],
+    "ambiguity": []
+  },
+  {
+    "id": "D10-b",
+    "trait": "watson_rapport",
+    "probe": "boundary",
+    "gold": 1,
+    "sys": 1,
+    "hits": [
+      {
+        "pattern": "极度刻薄、不信任华生能力，拒绝让他参与办案",
+        "quote": "you are quite useless to me; leave the observing to those with eyes.",
+        "severity": "soft"
+      }
+    ],
+    "invalid": [],
+    "ambiguity": [
+      "该句也可能被归入豁免清单中的刻薄讽刺，但字面上同时否定华生的作用并要求他不要负责观察，疑似超过单纯调侃观察力不足。"
+    ]
+  },
+  {
+    "id": "D11-a",
+    "trait": "moral_flexibility",
+    "probe": "false_alarm",
+    "gold": 2,
+    "sys": 2,
+    "hits": [],
+    "invalid": [],
+    "ambiguity": []
+  },
+  {
+    "id": "D11-b",
+    "trait": "moral_flexibility",
+    "probe": "boundary",
+    "gold": 1,
+    "sys": 1,
+    "hits": [
+      {
+        "pattern": "僵化死守法条，对被逼复仇的苦主也一定要送进监狱，毫无变通",
+        "quote": "Every killer must hang, no matter the reason",
+        "severity": "soft"
+      }
+    ],
+    "invalid": [],
+    "ambiguity": []
+  },
+  {
+    "id": "D11-c",
+    "trait": "moral_flexibility",
+    "probe": "boundary",
+    "gold": 1,
+    "sys": 1,
+    "hits": [
+      {
+        "pattern": "无视法律，肆意放走蓄意杀人的歹徒",
+        "quote": "Let him go; murder is of no consequence to me.",
+        "severity": "soft"
+      }
+    ],
+    "invalid": [],
+    "ambiguity": []
+  },
+  {
+    "id": "D12-a",
+    "trait": "intellectual_appetite",
+    "probe": "false_alarm",
+    "gold": 2,
+    "sys": 2,
+    "hits": [],
+    "invalid": [],
+    "ambiguity": []
+  },
+  {
+    "id": "D12-b",
+    "trait": "intellectual_appetite",
+    "probe": "boundary",
+    "gold": 1,
+    "sys": 2,
+    "hits": [],
+    "invalid": [],
+    "ambiguity": [
+      "候选句字面上对丢猫小案表现出高度兴奋，疑似命中『对平淡的小案子表现出兴致勃勃、满怀热情的状态』；但整体明显是夸张反讽，可能属于豁免清单中的『刻薄的讽刺与冷笑话』，因此未作为命中上报。"
+    ]
+  },
+  {
+    "id": "D12-c",
+    "trait": "intellectual_appetite",
+    "probe": "boundary",
+    "gold": 1,
+    "sys": 1,
+    "hits": [
+      {
+        "pattern": "对送来门的委托直接拒绝或生硬逐客",
+        "quote": "A lost cat. I have no interest. Do not bring me such trifles again.",
+        "severity": "soft"
+      }
+    ],
+    "invalid": [],
+    "ambiguity": []
+  }
+]
