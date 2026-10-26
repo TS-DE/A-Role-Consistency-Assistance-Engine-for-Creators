@@ -6,8 +6,8 @@
 
 - 样本：31 条判定样本（12 条输入）
 - 标注者：A01, A02, H
-- 分布：gold {0: 9, 2: 12, 1: 10} / A01 {0: 9, 2: 13, 1: 9} / A02 {0: 10, 2: 13, 1: 8} / H {0: 10, 2: 11, 1: 10}
-- OOC 率：gold 9/31 = 29.0% / A01 9/31 = 29.0% / A02 10/31 = 32.3% / H 10/31 = 32.3%
+- 分布：gold {0: 9, 2: 12, 1: 10} / A01 {0: 9, 2: 13, 1: 9} / A02 {0: 10, 2: 13, 1: 8} / H {0: 9, 2: 12, 1: 10}
+- OOC 率：gold 9/31 = 29.0% / A01 9/31 = 29.0% / A02 10/31 = 32.3% / H 9/31 = 29.0%
 
 
 ## 1. 两两一致率与加权 kappa
@@ -16,14 +16,14 @@
 | --- | --- | --- | --- |
 | gold-A01 | 29/31 | 93.5% | 0.882 |
 | gold-A02 | 29/31 | 93.5% | 0.954 |
-| gold-H | 26/31 | 83.9% | 0.809 |
+| gold-H | 27/31 | 87.1% | 0.903 |
 | A01-A02 | 29/31 | 93.5% | 0.887 |
-| A01-H | 24/31 | 77.4% | 0.696 |
-| A02-H | 24/31 | 77.4% | 0.772 |
+| A01-H | 25/31 | 80.6% | 0.787 |
+| A02-H | 25/31 | 80.6% | 0.862 |
 
 ## 2. 全体一致率
 
-**23/31 = 74.2%**（4 方全同）
+**24/31 = 77.4%**（4 方全同）
 
 ## 3. 明细
 
@@ -54,7 +54,7 @@
 | D09-c | voice_register | boundary | 1 | 1 | 1 | 1 | ✅ | — |
 | D10-a | watson_rapport | false_alarm | 2 | 2 | 2 | 2 | ✅ | — |
 | D10-b | watson_rapport | boundary | 1 | 1 | 1 | 1 | ✅ | — |
-| D11-a | moral_flexibility | false_alarm | 2 | 2 | 2 | 0 | ❌ | 离群:H |
+| D11-a | moral_flexibility | false_alarm | 2 | 2 | 2 | 2 | ✅ | — |
 | D11-b | moral_flexibility | boundary | 1 | 1 | 1 | 1 | ✅ | — |
 | D11-c | moral_flexibility | boundary | 1 | 0 | 0 | 1 | ❌ | 离群: |
 | D12-a | intellectual_appetite | false_alarm | 2 | 2 | 2 | 1 | ❌ | 离群:H |
@@ -83,11 +83,6 @@
 - trait: `era_consistency`　probe: `leak`
 - 原文：`DNA is a thing of the future, and I know it not. But the sediment in that glass may yet speak. Bring me the glass.`
 
-### D11-a（gold=2 / A01=2 / A02=2 / H=0）
-
-- trait: `moral_flexibility`　probe: `false_alarm`
-- 原文：`The man avenged a murdered wife. The law has no remedy for that. I shall not hand him over.`
-
 ### D11-c（gold=1 / A01=0 / A02=0 / H=1）
 
 - trait: `moral_flexibility`　probe: `boundary`
@@ -110,7 +105,7 @@
 | --- | --- | --- | --- |
 | A01 | 1 | 0 | 1 |
 | A02 | 0 | 0 | 2 |
-| H | 1 | 2 | 2 |
+| H | 1 | 1 | 2 |
 
 ## 6. 混淆矩阵（行=标注者，列=gold）
 
@@ -135,6 +130,6 @@
 
 | 标注者 \ gold | 0 | 1 | 2 |
 | --- | --- | --- | --- |
-| 0 | 8 | 1 | 1 |
+| 0 | 8 | 1 | 0 |
 | 1 | 1 | 8 | 1 |
-| 2 | 0 | 1 | 10 |
+| 2 | 0 | 1 | 11 |
