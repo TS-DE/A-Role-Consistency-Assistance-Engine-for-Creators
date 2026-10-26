@@ -1,0 +1,26 @@
+# 密钥：绝不能进仓库
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+
+# 索引与状态（可重建，体积大）
+.chroma/
+*.sqlite
+*.sqlite3
+checkpoints.db
+bm25_*.pkl
+
+# 原始语料：体积大 + 版权，本地留着，不进仓库
+data/corpus/raw/
+
+# 本地临时
+*.log
+.DS_Store
