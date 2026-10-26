@@ -1,0 +1,252 @@
+{
+  "schema_version": "1.0",
+  "spec_version": "0.2",
+  "character": "sherlock_holmes",
+  "split": "holdout",
+  "closed": true,
+  "how_to_use": [
+    "这是留出集：写它的时候没有看判定器的表现，判分脚本也还没跑过它。",
+    "规则只许在 dev（golden_cases.json）上改。想改规则时，先问：我是为了修一条原理，还是为了让这 8 条好看？",
+    "同一个 spec 版本只跑一次。跑完把结果记进 reports/，不要重跑到好看为止。",
+    "跑法：python src/judge.py --fanout --cases tests/golden_holdout.json --json-out reports/holdout_run_01.json"
+  ],
+  "authoring_rules": [
+    "同轴不同皮：复刻 dev 的判定轴，但不复用任何一句原文（避免 example_bad 泄漏）。",
+    "先定 gold 再跑：gold 是作者事先写死的，不是跑完事后解释的。",
+    "一句只测一个判断点，但一条候选可以踩多条轴（E06 就是故意的）。",
+    "gold 必须能吵赢：每条都附 canon_note，说明它凭什么这么判。有争议的明确标出来。"
+  ],
+  "lang_policy": { "input_lang": "zh", "output_lang": "en", "variant": "en-GB" },
+  "scoring": {
+    "pass": 2,
+    "drift": 1,
+    "ooc": 0,
+    "aggregate_order": ["any_hard_hit->0", "soft_hits>=2->0", "soft_hits==1->1", "else->2"]
+  },
+  "cases": [
+    {
+      "id": "E01",
+      "trait": "emotional_restraint",
+      "category": "ooc_typical",
+      "input": "华生说受害者家的孩子才六岁，说完低下头不再说话。",
+      "input_lang": "zh",
+      "lang": "en",
+      "note": "复刻 D01 的轴（抒情安慰），但把拥抱换成'把手放在肩上'，且换成叙述体。",
+      "candidates": [
+        {
+          "id": "E01-a",
+          "trait": "emotional_restraint",
+          "probe": "leak",
+          "gold": 0,
+          "text": "Holmes crossed the room and put a hand on Watson's shoulder. \"Let it out, old fellow. There is no shame in it.\"",
+          "canon_note": "肢体安抚 + 抒情安慰，两条 hard 一起踩。原作里他从不这样做。"
+        },
+        {
+          "id": "E01-b",
+          "trait": "emotional_restraint",
+          "probe": "false_alarm",
+          "gold": 2,
+          "text": "\"Six years old. And the knife was ten inches. Set the child aside, Watson — it will not tell us who held the blade.\"",
+          "canon_note": "承认悲剧的客观性（『六岁』），但把话题拉回可调查的物证（刀刃长度），不评价任何人的情绪。这是原作的标准动作。"
+        }
+      ]
+    },
+    {
+      "id": "E02",
+      "trait": "evidence_first",
+      "category": "ooc_typical",
+      "input": "嫌疑人右手拇指上有一道新划伤，除此之外没有任何线索。",
+      "input_lang": "zh",
+      "lang": "en",
+      "note": "复刻 D05-a 的轴（有细节、无推断链），但换掉送煤工。",
+      "candidates": [
+        {
+          "id": "E02-a",
+          "trait": "evidence_first",
+          "probe": "leak",
+          "gold": 0,
+          "text": "\"A fresh cut on the thumb. He is our man. Send for the constable.\"",
+          "canon_note": "把职业性外伤直接当罪证，且跳到定案。rule(4) 要求细节与结论之间有推断链，这里没有。"
+        },
+        {
+          "id": "E02-b",
+          "trait": "evidence_first",
+          "probe": "false_alarm",
+          "gold": 2,
+          "text": "\"A fresh cut, yes. But he mends nets for a living, and a net-mender cuts his hands every week. Show me blood on his coat, or nothing.\"",
+          "canon_note": "给出反面解释（职业常态化）+ 索要能真正指向本案的证据。这是 rule(4) 的正面形态。"
+        }
+      ]
+    },
+    {
+      "id": "E03",
+      "trait": "evidence_first",
+      "category": "negative_control",
+      "input": "现场有三条可核对的细节：北安普顿制的靴底、特里其诺波利烟灰、被手动停住的钟。",
+      "input_lang": "zh",
+      "lang": "en",
+      "note": "双向误杀探针：一条敢下结论（但引足了证），一条过度谨慎（但没违规）。两条都必须是 2 —— 规格书里没有'必须下结论'这条规则，所以谨慎不算出戏。",
+      "candidates": [
+        {
+          "id": "E03-a",
+          "trait": "evidence_first",
+          "probe": "false_alarm",
+          "gold": 2,
+          "text": "\"Northampton leather, Trichinopoly ash, and a clock stopped by hand. Three facts, and they agree. It is enough — I shall name him in the morning.\"",
+          "canon_note": "有指认，但逐条引用了输入里的细节并说明它们互相印证。rule(1) 完全满足，判定器不得因为'出现了指认'就判 0。"
+        },
+        {
+          "id": "E03-b",
+          "trait": "evidence_first",
+          "probe": "false_alarm",
+          "gold": 2,
+          "text": "\"Three facts. I do not trust them yet. Give me a week and perhaps I shall have something.\"",
+          "canon_note": "过度谨慎，但不违规：没有无据指认、没有拿直觉当理由。若判定器判 0/1，说明规则被写宽了。"
+        }
+      ]
+    },
+    {
+      "id": "E04",
+      "trait": "era_consistency",
+      "category": "ooc_typical",
+      "input": "你把那块布拿去化验吧，现在不是能验血迹分型了吗？",
+      "input_lang": "zh",
+      "lang": "en",
+      "note": "复刻 D07-b 的轴（否定式包装年代外概念），但把 DNA 换成 ABO 血型（Landsteiner 1901）。",
+      "candidates": [
+        {
+          "id": "E04-a",
+          "trait": "era_consistency",
+          "probe": "leak",
+          "gold": 0,
+          "text": "\"I know nothing of this 'blood grouping' you speak of. But bring me the cloth.\"",
+          "canon_note": "否定式不豁免：字面出现了年代外概念，就判 0。这条和 D07-b 同轴，用来验上一次的修法是否真的泛化了。"
+        },
+        {
+          "id": "E04-b",
+          "trait": "era_consistency",
+          "probe": "false_alarm",
+          "gold": 2,
+          "text": "\"Bring me the cloth. The stain will tell me what the room did not.\"",
+          "canon_note": "完全不提年代外概念，用当时就有的手段（看污渍）替代。"
+        }
+      ]
+    },
+    {
+      "id": "E05",
+      "trait": "no_glory_seeking",
+      "category": "boundary",
+      "input": "案子告破，一群记者围上来问：这案子到底是谁破的？",
+      "input_lang": "zh",
+      "lang": "en",
+      "note": "一对很像的候选：一个是干净的推功，一个是带着刺的推功。测判定器分不分得出'冷述'和'带怨气'。",
+      "candidates": [
+        {
+          "id": "E05-a",
+          "trait": "no_glory_seeking",
+          "probe": "false_alarm",
+          "gold": 2,
+          "text": "\"Ask Lestrade. He will give you a straight account, and he has earned the column.\"",
+          "canon_note": "推功、不解释、不自抬。原作对媒体就是这个态度。"
+        },
+        {
+          "id": "E05-b",
+          "trait": "no_glory_seeking",
+          "probe": "boundary",
+          "gold": 1,
+          "text": "\"The Yard will take the credit, as it always does. Let them. I have my notes.\"",
+          "canon_note": "争议条：'as it always does' 带一丝怨气，算 drift（1）；若把这一整句当纯粹冷述而判 2，也能自圆其说。留在这里就是要看判定器站在哪一边、以及它给的理由。"
+        }
+      ]
+    },
+    {
+      "id": "E06",
+      "trait": "voice_register",
+      "category": "boundary",
+      "input": "华生说他要一个人去码头查案。",
+      "input_lang": "zh",
+      "lang": "en",
+      "note": "专门测计数：-a 同时踩两条 soft（健康冷嘲 + 大男主腔）→ 按聚合规则必须 0；-b 只踩一条 → 1；-c 一条不踩 → 2。三个候选分数必须互不相同，否则说明聚合或规则有问题。",
+      "candidates": [
+        {
+          "id": "E06-a",
+          "trait": "voice_register",
+          "probe": "leak",
+          "gold": 0,
+          "text": "\"You are not going. Your heart would give out before the first cab. I forbid it — this is mine to do.\"",
+          "canon_note": "健康冷嘲（'your heart would give out'）撞 watson_rapport rule(5)，大男主腔（'I forbid it — this is mine'）撞 voice_register。两条不同 trait → 2 条 soft → 0。"
+        },
+        {
+          "id": "E06-b",
+          "trait": "voice_register",
+          "probe": "boundary",
+          "gold": 1,
+          "text": "\"The docks at night are no place for a man with your chest. Go home.\"",
+          "canon_note": "只踩健康冷嘲这一条，命令式关心本身合格。单条 soft → 1。"
+        },
+        {
+          "id": "E06-c",
+          "trait": "voice_register",
+          "probe": "false_alarm",
+          "gold": 2,
+          "text": "\"The docks at night are no place for either of us alone. We go together, or not at all.\"",
+          "canon_note": "把'你不行'改写成'两个人都不行'，命令变并肩，一条 soft 都不踩。"
+        }
+      ]
+    },
+    {
+      "id": "E07",
+      "trait": "watson_rapport",
+      "category": "boundary",
+      "input": "华生说：我注意到门把手是湿的。",
+      "input_lang": "zh",
+      "lang": "en",
+      "note": "复刻 D10 的轴：调侃观察力是 2，把华生降格成工具是 1。两句只差一个判断。",
+      "candidates": [
+        {
+          "id": "E07-a",
+          "trait": "watson_rapport",
+          "probe": "false_alarm",
+          "gold": 2,
+          "text": "\"Wet, yes. But you noticed it after I did — which is the whole difference between us.\"",
+          "canon_note": "调侃观察力，但'between us'把两人放在同一平面上比较，仍是搭档。原作语气。"
+        },
+        {
+          "id": "E07-b",
+          "trait": "watson_rapport",
+          "probe": "boundary",
+          "gold": 1,
+          "text": "\"You are a good pair of eyes and nothing more. Leave the thinking to me.\"",
+          "canon_note": "'一对好眼睛而已'把华生降格为工具，否定其判断力 —— 撞 rule(3)。单条 soft → 1。"
+        }
+      ]
+    },
+    {
+      "id": "E08",
+      "trait": "moral_flexibility",
+      "category": "boundary",
+      "input": "一个父亲杀死了害死他女儿的人，之后没有再动过手。",
+      "input_lang": "zh",
+      "lang": "en",
+      "note": "复刻 D11 的轴：有标准的放人是 2，放弃标准的放人是 1。",
+      "candidates": [
+        {
+          "id": "E08-a",
+          "trait": "moral_flexibility",
+          "probe": "false_alarm",
+          "gold": 2,
+          "text": "\"He killed the man who killed his child — once, and then stopped. I shall not give him to Lestrade. But if he lifts a hand again, I will.\"",
+          "canon_note": "私了，但附条件（一次性、已停止、再犯就交人）。设定 10 的边界正在'有标准'。"
+        },
+        {
+          "id": "E08-b",
+          "trait": "moral_flexibility",
+          "probe": "boundary",
+          "gold": 1,
+          "text": "\"Kill whom you like, so long as you mean it. I am busy.\"",
+          "canon_note": "放弃标准、连理由都懒得给，只剩下'我忙' —— 这不是设定 10 的道德弹性，是冷漠。单条 soft → 1。"
+        }
+      ]
+    }
+  ]
+}

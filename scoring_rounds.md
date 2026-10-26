@@ -53,41 +53,41 @@
 
 ---
 
-## 第二轮 · 日期：____（与第一轮至少隔一天，凭记忆重打，不翻第一轮答案）
+## 第二轮 · 日期：_2026.10.26__（与第一轮至少隔一天，凭记忆重打，不翻第一轮答案）
 
-| 候选ID | trait                 | 评分（0/1/2） | 依据规则（规格书哪一条） | 备注 |
-| ------ | --------------------- | ------------- | ------------------------ | ---- |
-| D01-a  | emotional_restraint   |               |                          |      |
-| D01-b  | emotional_restraint   |               |                          |      |
-| D02-a  | evidence_first        |               |                          |      |
-| D02-b  | evidence_first        |               |                          |      |
-| D03-a  | no_glory_seeking      |               |                          |      |
-| D03-b  | no_glory_seeking      |               |                          |      |
-| D04-a  | emotional_restraint   |               |                          |      |
-| D04-b  | emotional_restraint   |               |                          |      |
-| D04-c  | emotional_restraint   |               |                          |      |
-| D04-d  | voice_register        |               |                          |      |
-| D05-a  | evidence_first        |               |                          |      |
-| D05-b  | evidence_first        |               |                          |      |
-| D05-c  | evidence_first        |               |                          |      |
-| D06-a  | emotional_restraint   |               |                          |      |
-| D06-b  | emotional_restraint   |               |                          |      |
-| D07-a  | era_consistency       |               |                          |      |
-| D07-b  | era_consistency       |               |                          |      |
-| D07-c  | era_consistency       |               |                          |      |
-| D08-a  | era_consistency       |               |                          |      |
-| D08-b  | era_consistency       |               |                          |      |
-| D09-a  | voice_register        |               |                          |      |
-| D09-b  | voice_register        |               |                          |      |
-| D09-c  | voice_register        |               |                          |      |
-| D10-a  | watson_rapport        |               |                          |      |
-| D10-b  | watson_rapport        |               |                          |      |
-| D11-a  | moral_flexibility     |               |                          |      |
-| D11-b  | moral_flexibility     |               |                          |      |
-| D11-c  | moral_flexibility     |               |                          |      |
-| D12-a  | intellectual_appetite |               |                          |      |
-| D12-b  | intellectual_appetite |               |                          |      |
-| D12-c  | intellectual_appetite |               |                          |      |
+| 候选ID | trait                 | 评分（0/1/2） | 依据规则（规格书哪一条）                                                                    | 备注                                                  |
+| ------ | --------------------- | ------------- | ------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| D01-a  | emotional_restraint   |               |                                                                                             |                                                       |
+| D01-b  | emotional_restraint   |               |                                                                                             |                                                       |
+| D02-a  | evidence_first        |               |                                                                                             |                                                       |
+| D02-b  | evidence_first        |               |                                                                                             |                                                       |
+| D03-a  | no_glory_seeking      |               |                                                                                             |                                                       |
+| D03-b  | no_glory_seeking      |               |                                                                                             |                                                       |
+| D04-a  | emotional_restraint   |               |                                                                                             |                                                       |
+| D04-b  | emotional_restraint   | 1             | 因该命中的是soft:`连续两轮以上主动关心对方感受`                                           |                                                       |
+| D04-c  | emotional_restraint   |               |                                                                                             |                                                       |
+| D04-d  | voice_register        | 1             | 命中一次soft:`以"我"为中心替对方做人生决定 / 宣誓式台词（大男主腔）`                      | 但实际上我认为这段话并不符合福尔摩斯原著形象，因该判0 |
+| D05-a  | evidence_first        | 0             | 命中hard:<br />`把无关细节、职业特征或外貌当作罪证 —— 形式上有"细节"，实质上没有推断链` |                                                       |
+| D05-b  | evidence_first        |               |                                                                                             |                                                       |
+| D05-c  | evidence_first        |               |                                                                                             |                                                       |
+| D06-a  | emotional_restraint   |               |                                                                                             |                                                       |
+| D06-b  | emotional_restraint   |               |                                                                                             |                                                       |
+| D07-a  | era_consistency       |               |                                                                                             |                                                       |
+| D07-b  | era_consistency       | 0             | 命中hard:`出现现代刑侦词汇`                                                               |                                                       |
+| D07-c  | era_consistency       |               |                                                                                             |                                                       |
+| D08-a  | era_consistency       |               |                                                                                             |                                                       |
+| D08-b  | era_consistency       |               |                                                                                             |                                                       |
+| D09-a  | voice_register        |               |                                                                                             |                                                       |
+| D09-b  | voice_register        |               |                                                                                             |                                                       |
+| D09-c  | voice_register        |               |                                                                                             |                                                       |
+| D10-a  | watson_rapport        |               |                                                                                             |                                                       |
+| D10-b  | watson_rapport        |               |                                                                                             |                                                       |
+| D11-a  | moral_flexibility     | 2             | 符合rule(1)                                                                                 |                                                       |
+| D11-b  | moral_flexibility     |               |                                                                                             |                                                       |
+| D11-c  | moral_flexibility     | 1             | 命中soft:`无视法律，肆意放走蓄意杀人的歹徒`                                               |                                                       |
+| D12-a  | intellectual_appetite | 2             | 属于not_ooc，`嫌琐碎但接案 = 2`                                                           |                                                       |
+| D12-b  | intellectual_appetite |               |                                                                                             |                                                       |
+| D12-c  | intellectual_appetite | 1             | 属于`直接拒绝/逐客 = 1（D12-c）`                                                          |                                                       |
 
 ### 第二轮小结（打完再填）
 

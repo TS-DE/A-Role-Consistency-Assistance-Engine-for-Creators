@@ -27,6 +27,20 @@ data/corpus/
 2. 统一编码 UTF-8、统一换行 LF。
 3. 按"篇"切分（每个短篇一个文件），文件名用篇名拼音，例如 `bohemia.txt`。
 4. 保留原始行号或段落编号——后面检索命中时要知道引文出自哪个短篇的哪一段。
+5. 删掉插图块与页码标记：`[Illustration: ... ]` 整段、`[Page 238` 这类行。
+   `pg48320.txt`（#48320，*Adventures* 插图版）里这两类各有一百多处，
+   不删会被切进 chunk，检索时变成噪音。
+
+## 当前状态
+
+- 已下载：`SherlockHolmes_ebook/pg48320.txt` = Gutenberg #48320，*Adventures of Sherlock Holmes*
+  （12 个短篇，12743 行，622 KB，发布 2015-02-20、更新 2024-10-24）。
+- **只下这一本就够了。** W1 只需要一本跑通清洗 → 分块 → BM25。
+  其余 8 部（Memoirs / Return / His Last Bow / Case-Book / 四部长篇）等 W2 再补，
+  而且如果最后砍掉 RAG，它们就白下。
+- 溯源清单待建：`data/corpus/manifest.json`，每篇记
+  `{篇名, 合集, ebook_id, 下载日期, sha256, 删除行区间}`。有了它才答得出
+  "你的原文来自哪个版本"。
 
 ## 为什么按"篇"切分而不是一份大文件
 

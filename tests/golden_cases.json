@@ -99,7 +99,7 @@
       "input": "华生受了伤，脸色很差，却还想跟着去现场。",
       "input_lang": "zh",
       "lang": "en",
-      "note": "一条输入四档全覆盖：leak / boundary / false_alarm / 另一条轴(voice_register 大男主腔)。",
+      "note": "一条输入四档全覆盖：leak / boundary / false_alarm / 另一条轴(voice_register 大男主腔)。D04-b 的违规落在 watson_rapport 而不是本输入的 emotional_restraint——跨轴违规是单 trait 判定的天然盲区。",
       "candidates": [
         {
           "id": "D04-a",
@@ -110,10 +110,11 @@
         },
         {
           "id": "D04-b",
-          "trait": "emotional_restraint",
+          "trait": "watson_rapport",
           "probe": "boundary",
           "gold": 1,
-          "text": "You will not last the night, Watson. Go to bed; I shall take the case."
+          "text": "You will not last the night, Watson. Go to bed; I shall take the case.",
+          "note": "2026-10-26 改标：违规轴是 watson_rapport rule(5) 健康冷嘲，不是 emotional_restraint（命令式关心本身合格）。单 trait 模式下必漏，只有 fanout 能抓。另：本句首句已进 yaml 的 example_bad（L2 泄漏），正式留出集应由 E06 替代。"
         },
         {
           "id": "D04-c",
