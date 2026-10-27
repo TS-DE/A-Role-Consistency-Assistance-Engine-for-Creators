@@ -25,8 +25,9 @@ class GraphState(TypedDict, total=False):
 
     # ── 校验节点 ────────────────────────────────────────
     verdicts: list[dict]     # 每个 trait 的 {trait, hits[], ambiguity[]}
-    score: int               # 聚合后的三档分：0 OOC / 1 drift / 2 pass
+    score: int               # 聚合后的三档分：0 OOC / 1 drift / 2 pass / -1 未完成
     violated: list[str]      # 命中的 pattern 摘要，供人读与回写
+    verify_incomplete: bool  # 有 trait 调用失败：这次判定不可信，不许当成"通过"
 
     # ── 出口 ────────────────────────────────────────────
     final: str               # 最终交给创作者的文本
@@ -45,6 +46,7 @@ def new_state(user_input: str, character_id: str = "sherlock_holmes") -> GraphSt
         verdicts=[],
         score=-1,
         violated=[],
+        verify_incomplete=False,
         final="",
         trace=[],
     )
