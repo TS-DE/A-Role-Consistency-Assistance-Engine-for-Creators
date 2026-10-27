@@ -36,4 +36,18 @@ src/                       ← 代码（W1 开始，一个节点一个函数地�
 
 ## 环境
 
-Python 3.12 / git 已就绪。依赖在 W1 再装，先别急着 `pip install` 一堆东西。
+Python 3.12 / git 已就绪。依赖只有 `pyyaml`，网络走标准库 `urllib`，不需要装 SDK。
+
+## 运行（v0.2.1 起）
+
+```bash
+python -m tests.judge.test_aggregator        # 离线单测，不联网
+python -m tests.judge.test_quote_validator   # 离线单测，不联网
+python -m src.cli.run_judge --limit 1 --dry  # 只看提示词，不发请求
+python -m src.cli.run_judge --fanout --cases tests/golden_holdout.json \
+       --json-out reports/holdout_run_03.json
+```
+
+模块分层、数据流与设计取舍见 [docs/08-判定器模块结构.md](docs/08-判定器模块结构.md)。
+旧的 `python src/judge.py` 已废弃。
+

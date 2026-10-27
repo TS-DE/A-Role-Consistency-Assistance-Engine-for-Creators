@@ -6,8 +6,62 @@
 
 | 版本 | 日期 | 主题 | 关键产物 |
 | --- | --- | --- | --- |
+| v0.2.1 | 2026-10-27 | 判定器模块化重构 + 运行时保护 | 10 个模块分层、`ChatModel` ABC、preflight、逐 trait 进度、失败熔断、离线单测 |
 | v0.2.0 | 2026-10-26 | 判定器跨 trait 评测 + 首次留出集盲跑 | `--fanout`、区间去重聚合、`--cases`、留出集 E01–E08、GBK 崩栈修复 |
 | v0.1.0 | 2026-10-26 | 初始项目导入与版本化 | 一致性规格书、黄金测试集、人设卡、评测脚本与对比报告 |
+
+---
+
+## v0.2.1 · 2026-10-27 · 判定器模块化重构 + 运行时保护
+
+### 1. 原有缺陷
+
+- **结构违规**：`src/judge.py` 单文件 600+ 行，违反"单文件 ≤ 300 行"；一个文件同时承担
+  .env 读取、规格载入、提示词拼接、HTTP 调用、JSON 解析、引文校验、分数聚合、CLI 八件事，
+  违反 SRP；没有 ABC，编排层直接 import `urllib`，违反 DIP；`tests/` 下裸文件 4 个、无子目录、
+  无 `__init__.py`，违反模块化规则。
+- **观测性缺陷（实际事故）**：整条候选的 8 次调用全部完成后才打印第一行。
+  网络异常时屏幕上一个字都没有，用户等了近一小时以为还在跑。实测复现：136 次调用串行、
+  无进度、无熔断，最坏可空耗数小时。
+- **无连通性探测、无失败熔断**：网络不可用时按 20s×4 次重试逐条白等，不做任何提前退出。
+
+### 2. 改进技术
+
+- 按职责拆为 10 个模块：`constants` / `env_loader` / `spec_loader` / `prompt_builder` /
+  `chat_model` / `hit_parser` / `quote_validator` / `aggregator` / `evaluator` / `cli.run_judge`。
+  依赖单向向下：入口层 → 编排层 → 能力层 → 常量。
+- 定义 `ChatModel`(ABC) 与 `OpenAICompatChatModel`(实现)：编排层只依赖抽象，换服务商只加子类（OCP/DIP）。
+- 常量（路径、档位、超时、重试、熔断阈值）全部收敛到 `constants.py`。
+- 运行时三重保护：起跑前 `preflight()` 连通性探测；每完成一次调用打一行 `· <trait> ok/FAIL`；
+  连续 8 次失败抛 `JudgeAborted` 立即中止。
+- 测试迁到 `tests/judge/test_<被测模块>.py`，15 条离线断言，无需 pytest。
+
+### 3. 对应代码位置
+
+- `src/judge/chat_model.py`：`ChatModel`(ABC)、`preflight()`、`OpenAICompatChatModel.complete()`
+- `src/judge/evaluator.py`：`TraitEvaluator.judge_case()` 内的连续失败计数与 `JudgeAborted`
+- `src/cli/run_judge.py`：`_progress()` 逐次进度、`main()` 中的 preflight 与中止分支
+- `src/judge/{constants,env_loader,spec_loader,prompt_builder,hit_parser,quote_validator,aggregator}.py`
+- `tests/judge/test_aggregator.py`、`tests/judge/test_quote_validator.py`（新增）
+- `docs/08-判定器模块结构.md`（新增：分层、数据流、设计取舍、约束对照）
+- 删除 `src/judge.py`（被上述模块替代）
+
+### 4. 验证流程
+
+```bash
+python -m tests.judge.test_aggregator        # 期望：7 个用例通过
+python -m tests.judge.test_quote_validator   # 期望：8 个用例通过
+python -m src.cli.run_judge --cases tests/golden_holdout.json --limit 1 --dry   # 只打提示词
+python -m src.cli.run_judge --fanout --cases tests/golden_holdout.json --json-out reports/holdout_run_03.json
+```
+
+实测结果：
+
+- `test_aggregator`：7/7 通过，exit 0。
+- `test_quote_validator`：8/8 通过，exit 0（修正了一条自身写错的用例：带引号的整句本就不是子串）。
+- `--dry`：正常输出 system 582 字符 + user 提示词。
+- preflight：起跑即打印"连通正常，开始评测"，随后逐条打印 `[i/N] <候选>` 与 `· <trait> ok`。
+- 文件行数：最大 178 行（`cli/run_judge.py`），其余 19–92 行，全部 < 300。
 
 ---
 
