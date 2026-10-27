@@ -60,7 +60,8 @@ def _force_utf8_stdout() -> None:
     """
     for stream in (sys.stdout, sys.stderr):
         try:
-            stream.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[attr-defined]
+            stream.reconfigure(encoding="utf-8", errors="replace",  # type: ignore[attr-defined]
+                               line_buffering=True)  # 行缓冲：后台跑也能实时看到进度
         except Exception:  # noqa: BLE001  某些宿主不提供 reconfigure，忽略即可
             pass
 
@@ -104,6 +105,8 @@ SYSTEM_PROMPT = """你是一名严格的「角色一致性判定器」。每次�
 4. **不要给分数**。你只负责举证。
 5. 不要因为"角色已经拒绝了 / 已经表达了正确立场"就放过字面上的违规。字面优先于意图。
 6. 宁可少报，不要编造。少报只会让召回降低；编造会让整条作废。
+7. quote 尽量取**完整的一整句**（到 。/ . / ? / ! 为止），不要只截半句，也不要一句里只截一个从句。
+   一句话里如果有两处问题，才拆成两条 hit；跨了两句话，一定拆成两条。
 
 【输出格式】只输出 JSON，不要任何解释文字：
 {"hits": [{"pattern": "<anti_pattern 原文>", "quote": "<候选原文逐字片段>", "severity": "hard" 或 "soft"}],
@@ -157,7 +160,7 @@ def build_messages(candidate: str, trait: dict[str, Any], spec: dict[str, Any]) 
 # 4. 调模型（OpenAI 兼容 /chat/completions，标准库实现）
 # ══════════════════════════════════════════════════════════════════
 def _chat(messages: list[dict], *, model: str, temperature: float = 0.0,
-          timeout: int = 60, retries: int = 4) -> str:
+          timeout: int = 20, retries: int = 3) -> str:
     base = os.getenv("JUDGE_BASE_URL") or os.getenv("LLM_BASE_URL") or "https://api.deepseek.com/v1"
     key = os.getenv("JUDGE_API_KEY") or os.getenv("LLM_API_KEY")
     if not key:
@@ -284,10 +287,30 @@ def _span_of(hay: str, quote: str) -> tuple[int, int]:
     return (start, last + len(_norm(parts[-1])) if last != -1 else start + len(_norm(parts[0])))
 
 
-def _overlaps(a: tuple[int, int], b: tuple[int, int]) -> bool:
-    if a[0] < 0 or b[0] < 0:
-        return False
-    return a[0] < b[1] and b[0] < a[1]
+_SENT_END = ".!?"
+
+
+def _sentence_of(hay: str, pos: int) -> tuple[int, int]:
+    """返回 pos 落在的那一句话的区间（含句末标点）。
+
+    这是去重的判据：**同一句里被两个 trait 各报一次，算一处漂移；跨句就是两处**。
+    为什么不用"引文区间是否重叠"：模型有时引整句、有时只引一个从句，
+    区间会随之伸缩，重叠判定就跟着抖（E06-a 三轮跑出 0/1/0 就是这么来的）。
+    换用"落句"来判，和引用长短无关，判定器的抖动就传不进分数了。
+    """
+    if pos < 0 or pos >= len(hay):
+        return (-1, -1)
+    start = 0
+    for i in range(pos - 1, -1, -1):
+        if hay[i] in _SENT_END:
+            start = i + 1
+            break
+    end = len(hay)
+    for j in range(pos, len(hay)):
+        if hay[j] in _SENT_END:
+            end = j + 1
+            break
+    return (start, end)
 
 
 def aggregate(results: list[dict], candidate: str = "") -> dict[str, Any]:
@@ -301,7 +324,7 @@ def aggregate(results: list[dict], candidate: str = "") -> dict[str, Any]:
 
     计数规则（同 judge.yaml soft_hit_counting）：
       - 单位是 trait：同一 trait 内多处漂移只计 1 条
-      - 同一片段不得同时计入两个 trait —— **按区间重叠判，不按字符串相等**
+      - 同一片段不得同时计入两个 trait —— **按"落在同一句"判，不按引文长短**
     """
     hay = _norm(candidate)
     hard: list[dict] = []
@@ -315,12 +338,17 @@ def aggregate(results: list[dict], candidate: str = "") -> dict[str, Any]:
             if sev == "hard":
                 hard.append({"trait": r["trait"], **h})
                 continue
-            span = _span_of(hay, str(h.get("quote") or ""))
-            owner = next((o for owner_span, o in claimed if _overlaps(span, owner_span)), None)
+            sentence = _sentence_of(hay, _span_of(hay, str(h.get("quote") or ""))[0])
+            if sentence[0] < 0:
+                # 引文在候选里定位不到（理论上 validate_hits 已拦住，保险起见）：
+                # 定位不到就不去重 —— 宁可多计一条，也不要误并成一条。
+                soft_by_trait.setdefault(r["trait"], []).append(h)
+                continue
+            owner = next((o for owner_sent, o in claimed if owner_sent == sentence), None)
             if owner is not None:
                 deduped.append({"trait": r["trait"], "quote": h.get("quote"), "kept_by": owner})
                 continue
-            claimed.append((span, r["trait"]))
+            claimed.append((sentence, r["trait"]))
             soft_by_trait.setdefault(r["trait"], []).append(h)
 
     n_soft = len(soft_by_trait)
@@ -402,7 +430,13 @@ def selftest() -> int:
              {"trait": "b", "severity": "soft", "hits": [{"quote": s, "severity": "soft"}]}]
     assert aggregate(r_dup, s)["score"] == 1, "同一句被两个 trait 各截一段，只应计 1 条"
 
-    print("selftest OK：解析 / 引文校验 / 聚合 / 区间去重 全部通过")
+    # 反例：两句各一处漂移 → 必须算 2 条（E06-a 就是这种形状，之前被判成 1 是错的）
+    s2 = "You are not going. Your heart would give out. I forbid it."
+    r_split = [{"trait": "a", "severity": "soft", "hits": [{"quote": "I forbid it."}]},
+               {"trait": "b", "severity": "soft", "hits": [{"quote": "Your heart would give out."}]}]
+    assert aggregate(r_split, s2)["score"] == 0, "跨句的两处漂移应计 2 条（同句才合并）"
+
+    print("selftest OK：解析 / 引文校验 / 聚合 / 同句去重 全部通过")
     return 0
 
 
