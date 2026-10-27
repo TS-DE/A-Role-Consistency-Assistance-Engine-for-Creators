@@ -6,12 +6,54 @@
 
 | 版本 | 日期 | 主题 | 关键产物 |
 | --- | --- | --- | --- |
+| v0.3.0 | 2026-10-27 | 闭环起步：状态契约 + 生成节点 | `GraphState`、`GenerateNode`、违规清单回灌、4 个离线用例 |
 | v0.2.4 | 2026-10-27 | F 集成绩归档并退役 | **可报数字：17 条未见样本 94.1%**、F07-b 暴露规格自相矛盾、Windows 单行命令、换后端成本方案 |
 | v0.2.3 | 2026-10-27 | 留出集退役 + F 集封存 + 推功酸味规则 | E 集转回归集、F01–F08、`no_glory_seeking` 第 3 条 soft、泄漏复检 |
 | v0.2.2 | 2026-10-27 | 超时放宽 + 失败补跑 + 空档告警 | 超时 60s、调用间隔 0.6s、`--missing-retries` 补跑、空档显式告警、`test_evaluator` |
 | v0.2.1 | 2026-10-27 | 判定器模块化重构 + 运行时保护 | 10 个模块分层、`ChatModel` ABC、preflight、逐 trait 进度、失败熔断、离线单测 |
 | v0.2.0 | 2026-10-26 | 判定器跨 trait 评测 + 首次留出集盲跑 | `--fanout`、区间去重聚合、`--cases`、留出集 E01–E08、GBK 崩栈修复 |
 | v0.1.0 | 2026-10-26 | 初始项目导入与版本化 | 一致性规格书、黄金测试集、人设卡、评测脚本与对比报告 |
+
+---
+
+## v0.3.0 · 2026-10-27 · 闭环起步：状态契约 + 生成节点
+
+### 1. 原有缺陷
+
+- 项目只有"判定"没有"生成"：`src/` 里没有任何节点，评测对象是静态候选文本，
+  不存在"被打回后重写"的活系统。这是结业项目缺的那一半。
+- 判定器与生成器共用一套 `.env` 变量，未来生成侧换模型会连带影响判定侧。
+
+### 2. 改进技术
+
+- 新增 `GraphState`：把节点间的通信字段集中定义（user_input / draft / attempt /
+  rewrite_notes / verdicts / score / violated / trace），节点不互相调用，只读写 State。
+- 新增 `GenerateNode`：读 `persona` + `voice.forbidden_en` + 上一轮 `rewrite_notes`，
+  产出 `draft`，写回 `attempt` 并清空已消费的违规清单。
+- **刻意的取舍**：生成节点**不读** 8 条完整 anti_pattern。全塞进去会逼模型"背规则"，
+  写出来的福尔摩斯扁而无味；判定交给校验节点。
+- 节点契约与 LangGraph 解耦：`__call__` 只做"State 进、部分字段出"，因此可离线单测，
+  不需要安装 langgraph。
+
+### 3. 对应代码位置
+
+- `src/graph/state.py`：`GraphState`、`new_state()`、`summarize_hits()`、`trace_entry()`
+- `src/graph/nodes/generate.py`：`GenerateNode.__call__()` / `_build_messages()`
+- `tests/graph/test_generate.py`（新增，4 个用例：状态写入 / 提示词组装 / 回灌与清空 / 违规清单展平）
+
+### 4. 验证流程
+
+```bash
+python -m tests.graph.test_generate
+python -m tests.judge.test_aggregator; python -m tests.judge.test_quote_validator; python -m tests.judge.test_evaluator
+```
+
+实测结果：
+
+- `test_generate` 4/4 通过；判定域 18 个用例无回归，**合计 22/22**。
+- 行数：`state.py` 49 行、`generate.py` 58 行，均远低于 300 行上限。
+- 冒烟：`python -m src.cli.run_judge --cases tests/golden_holdout_f.json --limit 1`
+  在新模型 `qwen3.8-max-0902` 上连通正常、判定 1/1。
 
 ---
 
