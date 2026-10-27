@@ -6,6 +6,7 @@
 
 | 版本 | 日期 | 主题 | 关键产物 |
 | --- | --- | --- | --- |
+| v0.3.1 | 2026-10-27 | 校验节点接入闭环 | `VerifyNode` 全轴判定、未完成不许当通过、5 个离线用例 |
 | v0.3.0 | 2026-10-27 | 闭环起步：状态契约 + 生成节点 | `GraphState`、`GenerateNode`、违规清单回灌、4 个离线用例 |
 | v0.2.4 | 2026-10-27 | F 集成绩归档并退役 | **可报数字：17 条未见样本 94.1%**、F07-b 暴露规格自相矛盾、Windows 单行命令、换后端成本方案 |
 | v0.2.3 | 2026-10-27 | 留出集退役 + F 集封存 + 推功酸味规则 | E 集转回归集、F01–F08、`no_glory_seeking` 第 3 条 soft、泄漏复检 |
@@ -13,6 +14,39 @@
 | v0.2.1 | 2026-10-27 | 判定器模块化重构 + 运行时保护 | 10 个模块分层、`ChatModel` ABC、preflight、逐 trait 进度、失败熔断、离线单测 |
 | v0.2.0 | 2026-10-26 | 判定器跨 trait 评测 + 首次留出集盲跑 | `--fanout`、区间去重聚合、`--cases`、留出集 E01–E08、GBK 崩栈修复 |
 | v0.1.0 | 2026-10-26 | 初始项目导入与版本化 | 一致性规格书、黄金测试集、人设卡、评测脚本与对比报告 |
+
+---
+
+## v0.3.1 · 2026-10-27 · 校验节点接入闭环
+
+### 1. 原有缺陷
+
+- 图里只有生成、没有校验：草稿无人审，`score` 字段永远是初始值 -1，闭环不存在。
+- 校验若直接调 `TraitEvaluator` 而不处理失败，会把"缺一条规则算出的 2 分"当成通过 —— 假通过。
+
+### 2. 改进技术
+
+- `VerifyNode`：读 `draft` → 全轴判定 → 写 `verdicts` / `score` / `violated` / `verify_incomplete`。
+- **永远 fanout**：不提供"只判某一条"的开关。D04-b 的教训是违规可能落在被标注之外的另一条轴。
+- **未完成不许当通过**：任一 trait 调用失败 → `score = -1` + `verify_incomplete = True`，交给路由层送人工。
+- 复用 `TraitEvaluator` 而非重写判定逻辑，避免两份会各自漂移的真相。
+
+### 3. 对应代码位置
+
+- `src/graph/nodes/verify.py`：`VerifyNode.__call__()`，`INCOMPLETE_SCORE`
+- `src/graph/state.py`：新增 `verify_incomplete` 字段（含 `new_state()` 初始化）
+- `tests/graph/test_verify.py`（新增，5 个用例）
+
+### 4. 验证流程
+
+```bash
+python -m tests.graph.test_verify
+python -m tests.graph.test_generate
+python -m tests.judge.test_aggregator; python -m tests.judge.test_quote_validator; python -m tests.judge.test_evaluator
+```
+
+实测结果：`test_verify` 5/5、`test_generate` 4/4，判定域 18 个用例无回归，**合计 27/27 通过**。
+行数：`verify.py` 66 行、`state.py` 49 行、`generate.py` 58 行，均远低于 300 行上限。
 
 ---
 
