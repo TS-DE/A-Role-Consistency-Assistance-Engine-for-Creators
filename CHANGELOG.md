@@ -6,9 +6,57 @@
 
 | 版本 | 日期 | 主题 | 关键产物 |
 | --- | --- | --- | --- |
+| v0.2.2 | 2026-10-27 | 超时放宽 + 失败补跑 + 空档告警 | 超时 60s、调用间隔 0.6s、`--missing-retries` 补跑、空档显式告警、`test_evaluator` |
 | v0.2.1 | 2026-10-27 | 判定器模块化重构 + 运行时保护 | 10 个模块分层、`ChatModel` ABC、preflight、逐 trait 进度、失败熔断、离线单测 |
 | v0.2.0 | 2026-10-26 | 判定器跨 trait 评测 + 首次留出集盲跑 | `--fanout`、区间去重聚合、`--cases`、留出集 E01–E08、GBK 崩栈修复 |
 | v0.1.0 | 2026-10-26 | 初始项目导入与版本化 | 一致性规格书、黄金测试集、人设卡、评测脚本与对比报告 |
+
+---
+
+## v0.2.2 · 2026-10-27 · 超时放宽 + 失败补跑 + 空档告警
+
+### 1. 原有缺陷
+
+- **超时过短**：`timeout=20s` 对 qwen3.8-27b 偏紧（单次常在 15–30s）。`holdout_run_03` 中
+  7/17 条候选因单条 trait 读超时整条作废。
+- **指标失效被掩盖**：作废的 7 条里**包含全部 4 条漏杀探针**，于是汇总出现
+  `0 档 0/0 = n/a`，而"全量 90.0%"的分母只剩 10 条、不含任何该抓类型 —— 这个数没有意义，
+  但原先没有任何提示。
+- **8 连发易触发限流**：一条候选连续 8 次调用无间隔，失败后又立刻重试，容易撞在同一个限流窗口上。
+- 失败只记账不补跑：瞬时失败直接让整条候选作废。
+
+### 2. 改进技术
+
+- 超时 20s → **60s**；重试 2 次；退避基数 1.5 → **3s**（3/6/12，给限流窗口合上的时间）。
+- 每次调用之间加 **0.6s 间隔**（`CALL_GAP`），避免 8 连发。
+- 新增**失败补跑**：只重试失败的那几条 trait，最多 `--missing-retries` 轮（默认 2），
+  已成功的不重跑 —— 一次抖动不再让整条候选作废。
+- 汇总对**空档**显式告警：某档有效样本为 0 时打印"该档结论不成立"，不再安静显示 n/a。
+
+### 3. 对应代码位置
+
+- `src/judge/constants.py`：`DEFAULT_TIMEOUT`、`DEFAULT_RETRIES`、`BACKOFF_BASE`、`CALL_GAP`、`MISSING_RETRIES`
+- `src/judge/evaluator.py`：`TraitEvaluator.judge_case()` 的补跑循环（`pending` / `failures`）
+- `src/cli/run_judge.py`：`--missing-retries`、`_print_summary()` 空档告警
+- `tests/judge/test_evaluator.py`（新增，3 个用例：瞬时失败可救回 / 补跑用尽报失败 / 连续失败熔断）
+- `docs/08-判定器模块结构.md`：运行时保护第 5 条
+
+### 4. 验证流程
+
+```bash
+python -m tests.judge.test_aggregator        # 7 个用例
+python -m tests.judge.test_quote_validator   # 8 个用例
+python -m tests.judge.test_evaluator         # 3 个用例
+python -m src.cli.run_judge --fanout --cases tests/golden_holdout.json --json-out reports/holdout_run_04.json
+```
+
+实测结果：
+
+- 三组离线用例 **18/18 通过**（7 + 8 + 3），exit 0。
+- 补跑用例证明：脚本化瞬时失败 1 次后只补跑失败的那条，`calls == 2`，最终 `failed` 为空。
+- 熔断用例证明：连续失败达阈值抛 `JudgeAborted`。
+- 修正了一条测试自身的缺陷：`MAX_CONSECUTIVE_FAILURES` 被前一个用例改动后泄漏到后续用例，
+  已改为在用例内 try/finally 恢复。
 
 ---
 

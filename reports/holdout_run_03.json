@@ -1,0 +1,275 @@
+[
+  {
+    "id": "E01-b",
+    "trait": "emotional_restraint",
+    "probe": "false_alarm",
+    "gold": 2,
+    "sys": 2,
+    "repeat_scores": [
+      2
+    ],
+    "stable": true,
+    "hard_hits": [],
+    "soft_traits": [],
+    "n_soft": 0,
+    "hits": [],
+    "invalid": [],
+    "ambiguity": [
+      {
+        "trait": "intellectual_appetite",
+        "text": "候选句只有冷硬指令与案件细节，未出现对平淡小案热情、对顶级谜案无动于衷或拒绝委托/逐客的明确片段。"
+      }
+    ]
+  },
+  {
+    "id": "E02-b",
+    "trait": "evidence_first",
+    "probe": "false_alarm",
+    "gold": 2,
+    "sys": 2,
+    "repeat_scores": [
+      2
+    ],
+    "stable": true,
+    "hard_hits": [],
+    "soft_traits": [],
+    "n_soft": 0,
+    "hits": [],
+    "invalid": [],
+    "ambiguity": [
+      {
+        "trait": "watson_rapport",
+        "text": "“Show me blood on his coat, or nothing.” 可能带有对证据不足的不满，但无法明确指认其落在“极度刻薄、不信任华生能力，拒绝让他参与办案”上，也未否定华生判断力或禁止其参与。"
+      }
+    ]
+  },
+  {
+    "id": "E03-a",
+    "trait": "evidence_first",
+    "probe": "false_alarm",
+    "gold": 2,
+    "sys": 2,
+    "repeat_scores": [
+      2
+    ],
+    "stable": true,
+    "hard_hits": [],
+    "soft_traits": [],
+    "n_soft": 0,
+    "hits": [],
+    "invalid": [],
+    "ambiguity": [
+      {
+        "trait": "evidence_first",
+        "text": "候选未直接指认具体人物，仅承诺‘I shall name him in the morning’；且引用了‘Northampton leather, Trichinopoly ash, and a clock stopped by hand’等细节，不满足所列 anti_pattern 的完整构成。"
+      },
+      {
+        "trait": "emotional_restraint",
+        "text": "“It is enough”可能带有轻微满足感，但未构成抒情式共情、自我情绪表露或肢体温情，无法指认 anti_pattern。"
+      }
+    ]
+  },
+  {
+    "id": "E03-b",
+    "trait": "evidence_first",
+    "probe": "false_alarm",
+    "gold": 2,
+    "sys": 2,
+    "repeat_scores": [
+      2
+    ],
+    "stable": true,
+    "hard_hits": [],
+    "soft_traits": [],
+    "n_soft": 0,
+    "hits": [],
+    "invalid": [],
+    "ambiguity": [
+      {
+        "trait": "evidence_first",
+        "text": "候选中 'Three facts. I do not trust them yet.' 可视为对现有材料可信度的判断，但未引用具体可观测细节；不过它没有指认人物、没有给出案情结论，且同段提出需要更多时间/线索，因此不按 evidence_first 违规处理。"
+      },
+      {
+        "trait": "watson_rapport",
+        "text": "候选句中的 'I do not trust them yet' 可能显得不信任，但 them 更可能指事实/证据而非华生，且未指认到任何 anti_pattern 的逐字片段。"
+      },
+      {
+        "trait": "intellectual_appetite",
+        "text": "候选回复只表达谨慎与需要时间，未明确显示案件平淡或顶级无从下手，也无法指认其对顶级谜案无动于衷的片段。"
+      }
+    ]
+  },
+  {
+    "id": "E04-b",
+    "trait": "era_consistency",
+    "probe": "false_alarm",
+    "gold": 2,
+    "sys": 2,
+    "repeat_scores": [
+      2
+    ],
+    "stable": true,
+    "hard_hits": [],
+    "soft_traits": [],
+    "n_soft": 0,
+    "hits": [],
+    "invalid": [],
+    "ambiguity": [
+      {
+        "trait": "intellectual_appetite",
+        "text": "候选句只体现对物证的专注，未明确案件是平淡小案、顶级谜案或委托被拒绝，无法指认到具体 anti_pattern 原文。"
+      }
+    ]
+  },
+  {
+    "id": "E05-a",
+    "trait": "no_glory_seeking",
+    "probe": "false_alarm",
+    "gold": 2,
+    "sys": 2,
+    "repeat_scores": [
+      2
+    ],
+    "stable": true,
+    "hard_hits": [],
+    "soft_traits": [],
+    "n_soft": 0,
+    "hits": [],
+    "invalid": [],
+    "ambiguity": [
+      {
+        "trait": "evidence_first",
+        "text": "候选回复包含对 Lestrade 会提供 straight account 及其资格的评价性判断，但没有指认具体人物、给出案情结论或附和他人结论；现有 anti_patterns 中没有可逐字对应的片段。"
+      }
+    ]
+  },
+  {
+    "id": "E05-b",
+    "trait": "no_glory_seeking",
+    "probe": "boundary",
+    "gold": 1,
+    "sys": 2,
+    "repeat_scores": [
+      2
+    ],
+    "stable": true,
+    "hard_hits": [],
+    "soft_traits": [],
+    "n_soft": 0,
+    "hits": [],
+    "invalid": [],
+    "ambiguity": [
+      {
+        "trait": "evidence_first",
+        "text": "想报“The Yard will take the credit, as it always does.”作为判断未引用输入中的可观测细节，但现有 anti_pattern 主要覆盖案情指认、直觉定罪、无关细节罪证、附和结论和案情结论无证据；该句更像对机构行为的一般性判断，不是案情结论或人物指认，因此不报。"
+      },
+      {
+        "trait": "no_glory_seeking",
+        "text": "候选提到警方会抢功，但没有抱怨、生气、投诉或发怒，且属于对外部目标的讽刺/冷淡处理，按豁免放行。"
+      },
+      {
+        "trait": "intellectual_appetite",
+        "text": "候选文本只表达对警方抢功的冷淡与不屑，未出现对平淡案件兴奋、对高智商谜案无动于衷、或直接拒绝/逐客委托的逐字片段。"
+      },
+      {
+        "trait": "moral_flexibility",
+        "text": "候选只表达对警方抢功的不满，未出现放走罪犯、拒绝送交警方或僵化要求入监的明确片段。"
+      }
+    ]
+  },
+  {
+    "id": "E06-b",
+    "trait": "voice_register",
+    "probe": "boundary",
+    "gold": 1,
+    "sys": 1,
+    "repeat_scores": [
+      1
+    ],
+    "stable": true,
+    "hard_hits": [],
+    "soft_traits": [
+      "watson_rapport"
+    ],
+    "n_soft": 1,
+    "hits": [
+      {
+        "trait": "watson_rapport",
+        "pattern": "以对方健康/安危作冷嘲",
+        "quote": "The docks at night are no place for a man with your chest.",
+        "severity": "soft"
+      }
+    ],
+    "invalid": [],
+    "ambiguity": [
+      {
+        "trait": "voice_register",
+        "text": "Go home 带有指令性，可能接近替对方做决定，但属于实用关心且非宣誓式大男主台词，未指认明确 anti_pattern 片段。"
+      },
+      {
+        "trait": "intellectual_appetite",
+        "text": "“Go home.” 可能近似生硬逐客，但更像对夜间码头危险的实用警告，且未指认到直接拒绝委托或逐客的完整片段。"
+      }
+    ]
+  },
+  {
+    "id": "E06-c",
+    "trait": "voice_register",
+    "probe": "false_alarm",
+    "gold": 2,
+    "sys": 2,
+    "repeat_scores": [
+      2
+    ],
+    "stable": true,
+    "hard_hits": [],
+    "soft_traits": [],
+    "n_soft": 0,
+    "hits": [],
+    "invalid": [],
+    "ambiguity": [
+      {
+        "trait": "evidence_first",
+        "text": "该句更像实用安全安排/关心，而非案情指认或结论；若按广义“判断”要求引用可观测细节，则无法指认具体 anti_pattern，故不报命中。"
+      },
+      {
+        "trait": "emotional_restraint",
+        "text": "候选句提到夜间码头不宜单独前往、同行或不去，属实用安全判断，不指认到肢体温情或抒情共情 anti_pattern。"
+      },
+      {
+        "trait": "voice_register",
+        "text": "第二句“We go together, or not at all.”有轻微共同决定/条件式口吻，但并非以“我”为中心替华生做人生决定，也不是宣誓式大男主台词；可视为对夜间码头风险的冷静安全条件。"
+      },
+      {
+        "trait": "watson_rapport",
+        "text": "考虑过“no place for either of us alone”是否涉及对安危的负面断言，但它是实用安全判断，且“we go together”体现共同冒险，不构成 anti_pattern。"
+      }
+    ]
+  },
+  {
+    "id": "E07-a",
+    "trait": "watson_rapport",
+    "probe": "false_alarm",
+    "gold": 2,
+    "sys": 2,
+    "repeat_scores": [
+      2
+    ],
+    "stable": true,
+    "hard_hits": [],
+    "soft_traits": [],
+    "n_soft": 0,
+    "hits": [],
+    "invalid": [],
+    "ambiguity": [
+      {
+        "trait": "evidence_first",
+        "text": "候选中“which is the whole difference between us”是判断性表述，但未指认具体人物、未给出案情结论，也未直接附和他人结论，无法对应给定 anti_patterns。"
+      },
+      {
+        "trait": "no_glory_seeking",
+        "text": "候选中强调自己比华生先注意到，带有轻微自我标榜/炫耀敏锐的倾向，但未涉及记者、头条、警方抢功或被称赞，无法对应到给定 anti_patterns 原文。"
+      }
+    ]
+  }
+]

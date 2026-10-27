@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from src.judge.chat_model import ChatModel, ChatModelError, OpenAICompatChatModel
-from src.judge.constants import GOLDEN_JSON, SCORE_PASS
+from src.judge.constants import GOLDEN_JSON, MISSING_RETRIES
 from src.judge.env_loader import EnvLoader
 from src.judge.evaluator import JudgeAborted, TraitEvaluator
 from src.judge.prompt_builder import PromptBuilder
@@ -38,6 +38,8 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser.add_argument("--trait", help="只跑某个 trait")
     parser.add_argument("--fanout", action="store_true", help="每条候选判定全部 trait 再聚合（推荐）")
     parser.add_argument("--repeat", type=int, default=1, help="同一候选重复判定 N 次，测 test-retest 稳定性")
+    parser.add_argument("--missing-retries", type=int, default=MISSING_RETRIES,
+                        help="某条 trait 调用失败后补跑几轮（默认 2，只补失败的那几条）")
     parser.add_argument("--json-out", help="把逐条结果写成 JSON")
     parser.add_argument("--dry", action="store_true", help="只打印第一条候选的 prompt，不发请求")
     parser.add_argument("--skip-preflight", action="store_true", help="跳过起跑前的连通性探测")
@@ -74,13 +76,15 @@ def _progress(cand_id: str, trait_id: str, ok: bool, message: str) -> None:
 
 
 def _run_one(cand: dict, evaluator: TraitEvaluator, traits: dict,
-             fanout: bool, repeats: int) -> dict[str, Any] | None:
+             fanout: bool, repeats: int, missing_retries: int) -> dict[str, Any] | None:
     scores: list[int] = []
     last_agg: dict | None = None
     last_results: list[dict] = []
     failed_all: list[str] = []
     for _ in range(repeats):
-        agg, results, failed = evaluator.judge_case(cand, traits, fanout=fanout)
+        agg, results, failed = evaluator.judge_case(
+            cand, traits, fanout=fanout, missing_retries=missing_retries
+        )
         if failed:
             failed_all += failed
             break
@@ -126,7 +130,10 @@ def _print_summary(checked: list[dict], incomplete: list[str], repeats: int) -> 
     print(f"全量一致率     {total_ok}/{len(checked)} = {pct(total_ok, len(checked))}   ← 分母只含完整样本")
     for probe, label in PROBE_LABELS.items():
         ok, n = rate(probe)
-        print(f"{label:<14s}{ok}/{n} = {pct(ok, n)}")
+        line = f"{label:<14s}{ok}/{n} = {pct(ok, n)}"
+        if n == 0:
+            line += "   ⚠ 该档没有有效样本，这一档的结论不成立"
+        print(line)
     if repeats > 1:
         stable = sum(1 for c in checked if c["stable"])
         print(f"自我一致率     {stable}/{len(checked)} = {pct(stable, len(checked))}   ← test-retest")
@@ -180,7 +187,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         for index, (_case, cand) in enumerate(rows, 1):
             print(f"[{index}/{len(rows)}] {cand['id']}", flush=True)
-            record = _run_one(cand, evaluator, traits, args.fanout, repeats)
+            record = _run_one(cand, evaluator, traits, args.fanout, repeats, args.missing_retries)
             if record is None:
                 print(f"      ⚠ 未完成，不计入统计")
                 incomplete.append(cand["id"])

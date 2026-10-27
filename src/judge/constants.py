@@ -20,10 +20,12 @@ SCORE_PASS = 2
 SOFT_HITS_TO_OOC = 2          # soft 累计到这个数就判 0
 
 # ── 调用参数 ────────────────────────────────────────────────
-DEFAULT_TIMEOUT = 20          # 单次 HTTP 超时（秒）
-DEFAULT_RETRIES = 3           # 首次之外的重试次数
-BACKOFF_BASE = 1.5            # 指数退避基数：1.5 → 3 → 6
-BACKOFF_CAP = 8.0
+DEFAULT_TIMEOUT = 60          # 单次 HTTP 超时（秒）。千问 27B 单次常到 15–30s，20s 会误杀
+DEFAULT_RETRIES = 2           # 首次之外的重试次数（超时 60s 时不宜再多，否则一次调用拖 3 分钟）
+BACKOFF_BASE = 3.0            # 指数退避基数：3 → 6 → 12，给限流窗口足够时间合上
+BACKOFF_CAP = 20.0
+CALL_GAP = 0.6                # 每次调用之间的间隔，避免 8 连发触发服务端限流
+MISSING_RETRIES = 2           # 某条 trait 失败后补跑几轮（补跑只针对失败的那几条）
 MAX_CONSECUTIVE_FAILURES = 8  # 连续失败到这条数就判定网络瘫了，立即中止
 PREFLIGHT_PROMPT = "reply with the single word OK"
 

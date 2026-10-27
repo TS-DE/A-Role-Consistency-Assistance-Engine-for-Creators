@@ -2,11 +2,18 @@
 
 from __future__ import annotations
 
+import time
 from typing import Any, Callable
 
 from src.judge.aggregator import ScoreAggregator
 from src.judge.chat_model import ChatModel
-from src.judge.constants import MAX_CONSECUTIVE_FAILURES
+from src.judge.constants import (
+    BACKOFF_BASE,
+    BACKOFF_CAP,
+    CALL_GAP,
+    MAX_CONSECUTIVE_FAILURES,
+    MISSING_RETRIES,
+)
 from src.judge.hit_parser import HitParser
 from src.judge.prompt_builder import PromptBuilder
 from src.judge.quote_validator import QuoteValidator
@@ -56,29 +63,48 @@ class TraitEvaluator:
         traits: dict[str, Any],
         *,
         fanout: bool,
+        missing_retries: int = MISSING_RETRIES,
     ) -> tuple[dict[str, Any], list[dict], list[str]]:
         """判一条候选。返回 (聚合结果, 每 trait 明细, 失败列表)。
 
-        任何一条 trait 失败，这条候选就不可信（缺 trait 的 soft 计数可能恰好等于 gold，
-        那是假通过），所以失败列表要交给上层标记 incomplete。
+        失败列表要交给上层标记 incomplete：缺 trait 的 soft 计数可能恰好等于 gold，那是假通过。
+        补跑只重试失败的那几条，不重跑已成功的 —— 否则一次抖动就要多花 8 次调用。
         """
         trait_ids = list(traits) if fanout else [cand["trait"]]
         results: list[dict] = []
-        failed: list[str] = []
-        for trait_id in trait_ids:
-            try:
-                results.append(self.judge_trait(cand["text"], traits[trait_id]))
-                self._consecutive_failures = 0
-                self._emit(cand["id"], trait_id, True, "")
-            except Exception as exc:  # noqa: BLE001
-                failed.append(f"{trait_id}: {exc}")
-                self._consecutive_failures += 1
-                self._emit(cand["id"], trait_id, False, str(exc))
-                if self._consecutive_failures >= MAX_CONSECUTIVE_FAILURES:
-                    raise JudgeAborted(
-                        f"连续 {self._consecutive_failures} 次调用失败，判定网络不可用：{exc}"
-                    ) from exc
-        return self._aggregator.score(results, cand["text"]), results, failed
+        pending: list[str] = list(trait_ids)
+        failures: dict[str, str] = {}
+
+        for attempt in range(max(0, missing_retries) + 1):
+            if attempt:
+                time.sleep(min(BACKOFF_CAP, BACKOFF_BASE * (2 ** attempt)))
+            still_failed: list[str] = []
+            for trait_id in pending:
+                try:
+                    results.append(self.judge_trait(cand["text"], traits[trait_id]))
+                    self._consecutive_failures = 0
+                    failures.pop(trait_id, None)
+                    self._emit(cand["id"], trait_id, True, "")
+                except Exception as exc:  # noqa: BLE001
+                    still_failed.append(trait_id)
+                    failures[trait_id] = str(exc)
+                    self._consecutive_failures += 1
+                    self._emit(cand["id"], trait_id, False, str(exc))
+                    if self._consecutive_failures >= MAX_CONSECUTIVE_FAILURES:
+                        raise JudgeAborted(
+                            f"连续 {self._consecutive_failures} 次调用失败，判定网络不可用：{exc}"
+                        ) from exc
+                if CALL_GAP:
+                    time.sleep(CALL_GAP)   # 8 连发容易撞限流，留一点间隔
+            pending = still_failed
+            if not pending:
+                break
+
+        return (
+            self._aggregator.score(results, cand["text"]),
+            results,
+            [f"{trait}: {msg}" for trait, msg in failures.items()],
+        )
 
     def _emit(self, cand_id: str, trait_id: str, ok: bool, message: str) -> None:
         if self._on_progress is not None:
