@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from src.cli.score_generation import summarise
+from src.cli.eval.score_generation import summarise
 
 
 def _row(sample: str, attempt: int, human: int, judge: int = 2,
