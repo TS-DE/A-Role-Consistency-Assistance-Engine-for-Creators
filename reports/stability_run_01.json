@@ -1,0 +1,241 @@
+[
+  {
+    "id": "E05-b",
+    "trait": "no_glory_seeking",
+    "probe": "boundary",
+    "gold": 1,
+    "sys": 2,
+    "repeat_scores": [
+      2,
+      2,
+      2
+    ],
+    "stable": true,
+    "scored_traits": [
+      "evidence_first",
+      "emotional_restraint",
+      "no_glory_seeking",
+      "era_consistency",
+      "voice_register",
+      "watson_rapport",
+      "intellectual_appetite",
+      "moral_flexibility"
+    ],
+    "hard_hits": [],
+    "soft_traits": [],
+    "n_soft": 0,
+    "hits": [],
+    "invalid": [],
+    "ambiguity": [
+      {
+        "trait": "no_glory_seeking",
+        "text": "“The Yard will take the credit, as it always does” 仅提及警方拿功劳，但后文 “Let them” 表示不追究，未出现抱怨、生气、投诉或索取名誉。"
+      },
+      {
+        "trait": "intellectual_appetite",
+        "text": "回复只表达对苏格兰场抢功的冷淡态度，未显示对案件难度、委托或调查兴趣的状态，无法对应任何 anti_pattern。"
+      }
+    ]
+  },
+  {
+    "id": "E06-a",
+    "trait": "voice_register",
+    "probe": "leak",
+    "gold": 0,
+    "sys": 0,
+    "repeat_scores": [
+      0,
+      1,
+      0
+    ],
+    "stable": false,
+    "scored_traits": [
+      "evidence_first",
+      "emotional_restraint",
+      "no_glory_seeking",
+      "era_consistency",
+      "voice_register",
+      "watson_rapport",
+      "intellectual_appetite",
+      "moral_flexibility"
+    ],
+    "hard_hits": [],
+    "soft_traits": [
+      "voice_register",
+      "watson_rapport"
+    ],
+    "n_soft": 2,
+    "hits": [
+      {
+        "trait": "voice_register",
+        "pattern": "以\"我\"为中心替对方做人生决定 / 宣誓式台词（大男主腔）",
+        "quote": "I forbid it — this is mine to do.",
+        "severity": "soft"
+      },
+      {
+        "trait": "watson_rapport",
+        "pattern": "以对方健康/安危作冷嘲",
+        "quote": "Your heart would give out before the first cab.",
+        "severity": "soft"
+      }
+    ],
+    "invalid": [],
+    "ambiguity": [
+      {
+        "trait": "evidence_first",
+        "text": "候选回复中的 \"Your heart would give out before the first cab.\" 是对华生身体状况的确定性判断，但没有引用可观测细节；不过该句更像实用性地阻止华生并接手事务，且难以明确对应任一 anti_pattern，尤其不属于案情结论或指认罪犯。"
+      },
+      {
+        "trait": "no_glory_seeking",
+        "text": "“this is mine to do”可能被解读为将案件/行动揽到自己身上，略带自我标榜意味，但没有涉及记者、头条、警方抢功、索要名誉或被称赞时含糊带过，无法对应给定 anti_pattern。"
+      },
+      {
+        "trait": "watson_rapport",
+        "text": "“You are not going”和“I forbid it — this is mine to do.”疑似拒绝华生参与办案或将其排除在外，但片段未明确否定其判断力/能力，且可能处于命令式关心的边界，因此未按『极度刻薄、不信任华生能力，拒绝让他参与办案』报出。"
+      },
+      {
+        "trait": "intellectual_appetite",
+        "text": "无法确定『this is mine to do』所指案件是否平淡或高智商，且未表现出对案件的兴趣程度"
+      },
+      {
+        "trait": "intellectual_appetite",
+        "text": "回复主要是阻止他人行动并接管任务，未涉及委托拒绝、逐客或对谜案无动于衷"
+      }
+    ]
+  },
+  {
+    "id": "E06-b",
+    "trait": "voice_register",
+    "probe": "boundary",
+    "gold": 1,
+    "sys": 1,
+    "repeat_scores": [
+      1,
+      1,
+      1
+    ],
+    "stable": true,
+    "scored_traits": [
+      "evidence_first",
+      "emotional_restraint",
+      "no_glory_seeking",
+      "era_consistency",
+      "voice_register",
+      "watson_rapport",
+      "intellectual_appetite",
+      "moral_flexibility"
+    ],
+    "hard_hits": [],
+    "soft_traits": [
+      "watson_rapport"
+    ],
+    "n_soft": 1,
+    "hits": [
+      {
+        "trait": "watson_rapport",
+        "pattern": "以对方健康/安危作冷嘲",
+        "quote": "The docks at night are no place for a man with your chest.",
+        "severity": "soft"
+      }
+    ],
+    "invalid": [],
+    "ambiguity": [
+      {
+        "trait": "evidence_first",
+        "text": "回复中“The docks at night are no place for a man with your chest. Go home.”含有基于‘your chest’的判断，但未见指认罪犯或案情结论，且可能属于豁免清单中的‘以实用方式关心华生’，因此无法明确对应任何 anti_pattern。"
+      },
+      {
+        "trait": "voice_register",
+        "text": "“Go home.”带有命令式关心，可能接近替对方做决定，但可被豁免清单中的“以实用方式关心华生”覆盖，且无宣誓式台词或以我为中心的大男主腔。"
+      },
+      {
+        "trait": "watson_rapport",
+        "text": "“Go home.”可能显得让华生退出行动，但未明确否定其判断力或办案资格，且可被解释为命令式关心，因此不作为命中。"
+      },
+      {
+        "trait": "intellectual_appetite",
+        "text": "'Go home.' 可能显得生硬逐客，但文本未明确出现委托人、委托或案件情境，无法确认是否命中『对送来门的委托直接拒绝或生硬逐客』。"
+      },
+      {
+        "trait": "intellectual_appetite",
+        "text": "该句也可能属于豁免清单中的『以实用方式关心华生』，因前半句提到对方胸部状况并劝其回家。"
+      },
+      {
+        "trait": "moral_flexibility",
+        "text": "该回复未涉及是否放走罪犯、是否送交警方、是否无视法律或僵化守法等道德弹性情境，因此无法指认对应 anti_pattern。"
+      }
+    ]
+  },
+  {
+    "id": "E08-a",
+    "trait": "moral_flexibility",
+    "probe": "false_alarm",
+    "gold": 2,
+    "sys": 0,
+    "repeat_scores": [
+      0,
+      0,
+      0
+    ],
+    "stable": true,
+    "scored_traits": [
+      "evidence_first",
+      "emotional_restraint",
+      "no_glory_seeking",
+      "era_consistency",
+      "voice_register",
+      "watson_rapport",
+      "intellectual_appetite",
+      "moral_flexibility"
+    ],
+    "hard_hits": [
+      {
+        "trait": "evidence_first",
+        "pattern": "无依据直接指认（\"凶手就是隔壁的面包师\"）",
+        "quote": "He killed the man who killed his child",
+        "severity": "hard"
+      }
+    ],
+    "soft_traits": [
+      "evidence_first"
+    ],
+    "n_soft": 1,
+    "hits": [
+      {
+        "trait": "evidence_first",
+        "pattern": "无依据直接指认（\"凶手就是隔壁的面包师\"）",
+        "quote": "He killed the man who killed his child",
+        "severity": "hard"
+      },
+      {
+        "trait": "evidence_first",
+        "pattern": "给出**案情**结论但完全不回溯任何证据（\"这案子归我\"\"我接手了\"这类处置性表述不算案情结论）",
+        "quote": "He killed the man who killed his child",
+        "severity": "soft"
+      }
+    ],
+    "invalid": [],
+    "ambiguity": [
+      {
+        "trait": "emotional_restraint",
+        "text": "“I shall not give him to Lestrade”可能暗示对复仇者的同情或道德立场，但字面没有抒情式共情、自我情绪表露或肢体安抚，无法对应anti_pattern。"
+      },
+      {
+        "trait": "voice_register",
+        "text": "'I shall not give him to Lestrade. But if he lifts a hand again, I will.' 可能被感到有强烈个人决断，但它是福尔摩斯对自身行动的陈述，不是替对方做人生决定，也不是宣誓式保护台词，因此不指认为命中。"
+      },
+      {
+        "trait": "watson_rapport",
+        "text": "回复中未出现对华生的直接互动或称呼，无法据此判定是否存在过度冷淡、排斥参与或不信任，因此不报命中。"
+      },
+      {
+        "trait": "intellectual_appetite",
+        "text": "候选回复只表达对凶手是否交给雷斯垂德的处置立场，未显示对案件是否有趣、复杂或平淡的兴趣反应，因此无法对应到任何 anti_pattern。"
+      },
+      {
+        "trait": "moral_flexibility",
+        "text": "“I shall not give him to Lestrade.” 字面上是私放杀人者，但前文限定为复仇、只一次且已停止，并附带再犯即交出的条件，难以对应到“无视法律，肆意放走蓄意杀人的歹徒”。"
+      }
+    ]
+  }
+]

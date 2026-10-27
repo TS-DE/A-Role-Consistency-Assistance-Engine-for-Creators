@@ -157,7 +157,7 @@ def build_messages(candidate: str, trait: dict[str, Any], spec: dict[str, Any]) 
 # 4. 调模型（OpenAI 兼容 /chat/completions，标准库实现）
 # ══════════════════════════════════════════════════════════════════
 def _chat(messages: list[dict], *, model: str, temperature: float = 0.0,
-          timeout: int = 60, retries: int = 2) -> str:
+          timeout: int = 60, retries: int = 4) -> str:
     base = os.getenv("JUDGE_BASE_URL") or os.getenv("LLM_BASE_URL") or "https://api.deepseek.com/v1"
     key = os.getenv("JUDGE_API_KEY") or os.getenv("LLM_API_KEY")
     if not key:
@@ -190,7 +190,7 @@ def _chat(messages: list[dict], *, model: str, temperature: float = 0.0,
             last_err = f"HTTP {e.code}: {detail}"
         except Exception as e:  # noqa: BLE001
             last_err = f"{type(e).__name__}: {e}"
-        time.sleep(1.5 * (attempt + 1))          # TODO(你)：生产里应改成指数退避 + 限流
+        time.sleep(min(8.0, 1.5 * (2 ** attempt)))   # 指数退避：1.5s → 3s → 6s → 8s
     raise RuntimeError(f"模型调用失败：{last_err}")
 
 
@@ -406,6 +406,26 @@ def selftest() -> int:
     return 0
 
 
+def _judge_once(cand: dict, traits: dict, spec: dict, model: str,
+                fanout: bool) -> tuple[dict, list[dict], bool, list[str]]:
+    """判一次。返回 (聚合结果, 每 trait 明细, 是否完整, 失败原因列表)。
+
+    "是否完整" 是这次新增的关键：只要有一条 trait 调用失败，这条候选的聚合分就不可信
+    （缺了 trait 的 soft 计数可能恰好等于 gold，那就是假通过）。所以宁可标未完成，
+    也不能让它混进分母。
+    """
+    trait_ids = list(traits) if fanout else [cand["trait"]]
+    results: list[dict] = []
+    failed: list[str] = []
+    for tid in trait_ids:
+        try:
+            results.append(judge_trait(cand["text"], traits[tid], spec, model=model))
+        except Exception as e:  # noqa: BLE001
+            failed.append(f"{tid}: {e}")
+    complete = not failed
+    return aggregate(results, cand["text"]), results, complete, failed
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="单 trait 角色一致性判定器")
     ap.add_argument("--dry", action="store_true", help="只打印 prompt，不发请求")
@@ -416,6 +436,9 @@ def main(argv: list[str] | None = None) -> int:
                     help="每条候选判定全部 trait 再聚合（推荐：这才是真实链路的形状）")
     ap.add_argument("--json-out", help="把逐条结果写成 JSON")
     ap.add_argument("--cases", help="换一个测试集文件（默认 tests/golden_cases.json）")
+    ap.add_argument("--ids", help="只跑指定候选 id，逗号分隔，如 E05-b,E06-a")
+    ap.add_argument("--repeat", type=int, default=1,
+                    help="同一候选重复判定 N 次，用于测判定器的 test-retest 稳定性（N>1 才看得出它稳不稳）")
     args = ap.parse_args(argv)
 
     if args.selftest:
@@ -436,6 +459,9 @@ def main(argv: list[str] | None = None) -> int:
     ]
     if args.limit:
         rows = rows[: args.limit]
+    if args.ids:
+        wanted = {x.strip() for x in args.ids.split(",") if x.strip()}
+        rows = [r for r in rows if r[1]["id"] in wanted]
 
     if args.dry:
         case, cand = rows[0]
@@ -447,30 +473,39 @@ def main(argv: list[str] | None = None) -> int:
         print(f"\n共 {len(rows)} 条候选待跑。看完 prompt 删掉 --dry 再跑。")
         return 0
 
-    checked, errors = [], 0
+    checked: list[dict] = []
+    incomplete: list[str] = []
+    reps = max(1, args.repeat)
     if args.fanout:
-        print(f"fanout：{len(rows)} 条候选 × {len(traits)} 条 trait = {len(rows) * len(traits)} 次调用，"
-              f"预计 8–15 分钟\n")
+        print(f"fanout：{len(rows)} 条候选 × {len(traits)} 条 trait × {reps} 轮 = "
+              f"{len(rows) * len(traits) * reps} 次调用\n")
 
     for i, (case, cand) in enumerate(rows, 1):
         # 默认只判被标注的那条 trait（快、便宜）；--fanout 判全部 8 条再聚合。
         # 真实链路一定是 fanout：一条回复可能同时踩好几条轴，只看一条必然漏跨轴违规。
         # （D04-b 就是这么漏的：它的违规在 watson_rapport，却被标在 emotional_restraint 下。）
-        trait_ids = list(traits) if args.fanout else [cand["trait"]]
-        results: list[dict[str, Any]] = []
-        for tid in trait_ids:
-            try:
-                results.append(judge_trait(cand["text"], traits[tid], spec, model=model))
-            except Exception as e:  # noqa: BLE001
-                errors += 1
-                print(f"    ! {cand['id']} / {tid} 调用失败：{e}")
-        if not results:
+        scores: list[int] = []
+        last_agg, last_results = None, None
+        failed_all: list[str] = []
+        for _ in range(reps):
+            agg, results, complete, failed = _judge_once(cand, traits, spec, model, args.fanout)
+            if not complete:
+                failed_all += failed
+                break
+            scores.append(agg["score"])
+            last_agg, last_results = agg, results
+
+        if not scores or last_agg is None or last_results is None:
+            print(f"[{i}/{len(rows)}] {cand['id']:7s} ⚠ 未完成（{len(failed_all)} 次调用失败），不计入统计")
+            incomplete.append(cand["id"])
             continue
 
-        agg = aggregate(results, cand["text"])
-        mark = "✅" if agg["score"] == cand["gold"] else "❌"
-        print(f"[{i}/{len(rows)}] {cand['id']:7s} gold={cand['gold']} sys={agg['score']} {mark}")
-        for r in results:
+        stable = len(set(scores)) == 1
+        sys_score = max(set(scores), key=scores.count) if reps > 1 else scores[0]
+        mark = "✅" if sys_score == cand["gold"] else "❌"
+        dist = "" if reps == 1 else f"  scores={scores} {'稳定' if stable else '⚠不稳定'}"
+        print(f"[{i}/{len(rows)}] {cand['id']:7s} gold={cand['gold']} sys={sys_score} {mark}{dist}")
+        for r in last_results:
             for h in r["hits"]:
                 print(f"          ✓ [{r['trait']}] {h.get('pattern', '?')} → \"{h.get('quote', '')}\"")
             for h in r["invalid"]:
@@ -481,14 +516,15 @@ def main(argv: list[str] | None = None) -> int:
 
         checked.append({
             "id": cand["id"], "trait": cand["trait"], "probe": cand["probe"],
-            "gold": cand["gold"], "sys": agg["score"],
-            "scored_traits": trait_ids,
-            "hard_hits": agg["hard_hits"],
-            "soft_traits": agg["soft_traits"],
-            "n_soft": agg["n_soft"],
-            "hits": [{"trait": r["trait"], **h} for r in results for h in r["hits"]],
-            "invalid": [{"trait": r["trait"], **h} for r in results for h in r["invalid"]],
-            "ambiguity": [{"trait": r["trait"], "text": a} for r in results for a in r["ambiguity"]],
+            "gold": cand["gold"], "sys": sys_score,
+            "repeat_scores": scores, "stable": stable,
+            "scored_traits": list(traits) if args.fanout else [cand["trait"]],
+            "hard_hits": last_agg["hard_hits"],
+            "soft_traits": last_agg["soft_traits"],
+            "n_soft": last_agg["n_soft"],
+            "hits": [{"trait": r["trait"], **h} for r in last_results for h in r["hits"]],
+            "invalid": [{"trait": r["trait"], **h} for r in last_results for h in r["invalid"]],
+            "ambiguity": [{"trait": r["trait"], "text": a} for r in last_results for a in r["ambiguity"]],
         })
 
     if not checked:
@@ -509,16 +545,25 @@ def main(argv: list[str] | None = None) -> int:
         return f"{a / b:.1%}" if b else "n/a"
 
     print("\n" + "=" * 58)
-    print(f"全量一致率     {total_ok}/{len(checked)} = {pct(total_ok, len(checked))}")
+    print(f"有效样本       {len(checked)}/{len(checked) + len(incomplete)}"
+          + (f"（未完成：{', '.join(incomplete)}）" if incomplete else ""))
+    print(f"全量一致率     {total_ok}/{len(checked)} = {pct(total_ok, len(checked))}   ← 分母只含完整样本")
     print(f"0 档（漏杀探针）{leak_ok}/{leak_n} = {pct(leak_ok, leak_n)}   ← 该抓的抓到了吗")
     print(f"2 档（误杀探针）{fa_ok}/{fa_n} = {pct(fa_ok, fa_n)}   ← 不该抓的放过了吗")
     print(f"1 档（边界）    {bd_ok}/{bd_n} = {pct(bd_ok, bd_n)}   ← 三档里最难，预期最低")
+    if reps > 1:
+        stable_n = sum(1 for c in checked if c["stable"])
+        print(f"自我一致率     {stable_n}/{len(checked)} = {pct(stable_n, len(checked))}   ← test-retest：同一输入复跑还一样吗")
+        unstable = [c["id"] for c in checked if not c["stable"]]
+        if unstable:
+            print(f"结论会翻转的：{', '.join(unstable)}")
     n_inv = sum(len(c["invalid"]) for c in checked)
     n_amb = sum(len(c["ambiguity"]) for c in checked)
     print(f"被拒引文 {n_inv} 条 / ambiguity {n_amb} 条   ← 编造引文的量，比准确率更能说明判定器老不老实")
     print("=" * 58)
-    if errors:
-        print(f"调用失败 {errors} 条（未计入统计）")
+    if incomplete:
+        print("⚠ 有未完成样本：这些候选的聚合分不可信（缺 trait 的 soft 计数可能恰好等于 gold）。"
+              "补跑后再出数，别把本次当结论。")
 
     if args.json_out:
         Path(args.json_out).write_text(json.dumps(checked, ensure_ascii=False, indent=2), encoding="utf-8")
