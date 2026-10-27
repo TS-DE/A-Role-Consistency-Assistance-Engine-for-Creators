@@ -6,6 +6,7 @@
 
 | 版本 | 日期 | 主题 | 关键产物 |
 | --- | --- | --- | --- |
+| v0.5.1 | 2026-10-27 | MCP 能力外置 | 三个 MCP 工具、stdio server、`--selftest`、8 个用例、`docs/11` 接入指南 |
 | v0.5.0 | 2026-10-27 | 生成质量评估 | `docs/10` 评分方案、可填打分表 CSV、汇总脚本（均分/可用率/硬伤率/改写增益/同向性）、6 个用例 |
 | v0.4.3 | 2026-10-27 | 闭环文档 | `docs/09`：状态契约、时序实测、四条路由理由、五个坑、答辩骨架 |
 | v0.4.2 | 2026-10-27 | LangChain 适配器 + LangSmith 自检 | `LangChainChatModel`、`MODEL_BACKEND` 切换、`check_observability`、4 个用例 |
@@ -20,6 +21,48 @@
 | v0.2.1 | 2026-10-27 | 判定器模块化重构 + 运行时保护 | 10 个模块分层、`ChatModel` ABC、preflight、逐 trait 进度、失败熔断、离线单测 |
 | v0.2.0 | 2026-10-26 | 判定器跨 trait 评测 + 首次留出集盲跑 | `--fanout`、区间去重聚合、`--cases`、留出集 E01–E08、GBK 崩栈修复 |
 | v0.1.0 | 2026-10-26 | 初始项目导入与版本化 | 一致性规格书、黄金测试集、人设卡、评测脚本与对比报告 |
+
+---
+
+## v0.5.1 · 2026-10-27 · MCP 能力外置
+
+### 1. 原有缺陷
+
+- 判定能力只有两个入口（批量评测、闭环 CLI），**别人无法调用**：要用就得进项目、跑脚本。
+- 课程要求落地 MCP，但此前没有任何"MCP 相关"的东西；若只是挂个 hello world 反而减分。
+
+### 2. 改进技术
+
+- 新增 `src/mcp_server/`：`RoleGuardTools`（纯逻辑、可离线测）+ `server.py`（FastMCP 协议层）。
+- 三个工具：`list_traits` / `get_trait_rule` / `judge_reply`。
+  **判定逻辑零重写**，直接复用 `TraitEvaluator` —— 评测脚本、闭环、MCP 三个入口同一口径。
+- 模型懒加载：只有真正调用工具时才构造，客户端"列举工具后退出"不会触发建连。
+- `judge_reply` 保留两条硬约束：`violations` 必须带**可在原文逐字定位的引文**；
+  任一条 trait 调用失败则 `score=-1`（未完成），**绝不报成通过**。
+- `--selftest`：不接客户端、不花钱地验证规格加载、8 条轴列举、未知 trait 报错。
+- `docs/11-MCP能力外置.md`：为什么做、三个工具、Cursor/Claude Desktop 接入配置（含绝对路径与 cwd 的坑）、
+  自检、三条局限、下一步。
+
+### 3. 对应代码位置
+
+- `src/mcp_server/roleguard_tools.py`：`RoleGuardTools.list_traits()` / `get_trait_rule()` / `judge_reply()`
+- `src/mcp_server/server.py`：`FastMCP` 注册、`_get_tools()` 懒加载、`_selftest()`
+- `tests/mcp_server/test_roleguard_tools.py`（新增，8 个用例）
+- `docs/11-MCP能力外置.md`（新增）
+
+### 4. 验证流程
+
+```bash
+python -m tests.mcp_server.test_roleguard_tools
+python -m src.mcp_server.server --selftest
+```
+
+实测结果：
+
+- 工具层 8/8：轴列举、规则读取、未知 trait 报错、默认判全部、可限定轴、
+  **未完成不报通过**、空候选拒绝、违规证据带引文。
+- 服务端自检通过：8 条判定轴、规则可读、未知 trait 有明确报错。
+- 全量离线用例：judge 22 + graph 19 + gen 6 + mcp 8 = **55/55 通过**。
 
 ---
 
