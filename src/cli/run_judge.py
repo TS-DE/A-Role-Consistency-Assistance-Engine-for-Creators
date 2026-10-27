@@ -198,6 +198,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"    → gold={cand['gold']} sys={record['sys']} {mark}{extra}", flush=True)
             record["trait"] = cand["trait"]
             record["probe"] = cand["probe"]
+            record["model"] = model.model   # 换模型等于换仪器，结果文件必须自带出处
             checked.append(record)
     except JudgeAborted as exc:
         print(f"\n中止：{exc}")
@@ -206,6 +207,7 @@ def main(argv: list[str] | None = None) -> int:
     if not checked:
         print("没有可统计的结果。")
         return 1
+    print(f"\n模型：{model.model}   ← 换模型等于换仪器，不同模型的数字不可并排比较")
     _print_summary(checked, incomplete, repeats)
     if args.json_out:
         Path(args.json_out).write_text(json.dumps(checked, ensure_ascii=False, indent=2), encoding="utf-8")
