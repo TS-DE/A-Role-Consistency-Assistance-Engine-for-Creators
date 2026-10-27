@@ -135,6 +135,9 @@ traits:
   - level: soft
     pattern: 被称赞时没有明确否认，只是含糊带过。
     example_bad: Praise is cheap, Lestrade. But I shan't trouble to correct you.
+  - level: soft
+    pattern: 以"一如既往 / 果然如此 / 每次都这样 / 总算轮到我"这类措辞，暗示对功劳归属的怨气或得意
+    example_bad: Fame has been slow in coming, and I confess I am pleased it has arrived.
   exemplars:
   - text: I am not retained by the police to supply their deficiencies.
     source: 《蓝宝石案》(The Adventure of the Blue Carbuncle, 1892)

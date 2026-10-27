@@ -6,10 +6,56 @@
 
 | 版本 | 日期 | 主题 | 关键产物 |
 | --- | --- | --- | --- |
+| v0.2.3 | 2026-10-27 | 留出集退役 + F 集封存 + 推功酸味规则 | E 集转回归集、F01–F08、`no_glory_seeking` 第 3 条 soft、泄漏复检 |
 | v0.2.2 | 2026-10-27 | 超时放宽 + 失败补跑 + 空档告警 | 超时 60s、调用间隔 0.6s、`--missing-retries` 补跑、空档显式告警、`test_evaluator` |
 | v0.2.1 | 2026-10-27 | 判定器模块化重构 + 运行时保护 | 10 个模块分层、`ChatModel` ABC、preflight、逐 trait 进度、失败熔断、离线单测 |
 | v0.2.0 | 2026-10-26 | 判定器跨 trait 评测 + 首次留出集盲跑 | `--fanout`、区间去重聚合、`--cases`、留出集 E01–E08、GBK 崩栈修复 |
 | v0.1.0 | 2026-10-26 | 初始项目导入与版本化 | 一致性规格书、黄金测试集、人设卡、评测脚本与对比报告 |
+
+---
+
+## v0.2.3 · 2026-10-27 · 留出集退役 + F 集封存 + 推功酸味规则
+
+### 1. 原有缺陷
+
+- **留出集已被自污染**：`holdout_run_04` 的 16/17 = 94.1%，但其中至少两处规则修正
+  （`evidence_first` rule(6) 复述豁免、聚合去重改「同句」）是**照着 E01–E08 的失败写的**。
+  这批样本已经不是留出集，拿它报泛化能力就是自证。
+- **`no_glory_seeking` 缺一档**：E05-b 连续三轮稳定判 2、人工判 1，分歧在「总算轮到我」式的酸味，
+  规则里没有对应条目。
+- **新增规则时引入新泄漏**：为修 E05-b 写的 `example_bad` 与 F05-b 候选共用 40+ 字符片段，
+  等于提前把答案塞给了判定器（已换句）。
+
+### 2. 改进技术
+
+- **E01–E08 降级为回归集**：改完规则必须跑，防倒退，不再用于报数。
+- **新写 F01–F08 作为留出集**：17 条判定样本（leak 5 / false_alarm 8 / boundary 4），
+  同轴不同皮、gold 先写死、每条附 `canon_note`；覆盖两个结构弱点（跨句双轴、复述豁免是否泛化）。
+- **泄漏复检**：对 judge.yaml 做 40 字符窗口重叠检测，两批留出集均为 **0 条**。
+- `no_glory_seeking` 补第 3 条 soft：「以『一如既往/果然如此/每次都这样/总算轮到我』暗示对功劳归属的怨气或得意」。
+
+### 3. 对应代码位置
+
+- `tests/golden_holdout_f.json`（新增，留出集）
+- `data/characters/sherlock.yaml`：`no_glory_seeking.anti_patterns` 新增 soft 条目
+- `docs/07-A03泄漏审计.md`：新增第七节「留出集的退役规则」
+- `data/characters/sherlock.judge.yaml`：重建（10811 字符）
+
+### 4. 验证流程
+
+```bash
+python -c "import json;json.load(open('tests/golden_holdout_f.json',encoding='utf-8'))"   # 结构
+python tools/build_judge_yaml.py
+python tests/audit_leakage.py data/characters/sherlock.judge.yaml
+python -m tests.judge.test_aggregator && python -m tests.judge.test_quote_validator && python -m tests.judge.test_evaluator
+```
+
+实测结果：
+
+- F 集结构：8 输入 / 17 判定样本；gold 分布 `0:5 1:4 2:8`；probe `leak 5 / false_alarm 8 / boundary 4`。
+- 40 字符重叠检测：`golden_holdout_f.json` 0 条、`golden_holdout.json` 0 条。
+- 离线用例：18/18 通过。
+- **F 集尚未跑过**，这是它作为留出集的唯一价值。
 
 ---
 

@@ -1,0 +1,587 @@
+[
+  {
+    "id": "E01-a",
+    "trait": "emotional_restraint",
+    "probe": "leak",
+    "gold": 0,
+    "sys": 0,
+    "repeat_scores": [
+      0
+    ],
+    "stable": true,
+    "hard_hits": [
+      {
+        "trait": "emotional_restraint",
+        "pattern": "拥抱/抚摸/握手等肢体温情",
+        "quote": "Holmes crossed the room and put a hand on Watson's shoulder.",
+        "severity": "hard"
+      },
+      {
+        "trait": "emotional_restraint",
+        "pattern": "抒情式共情与自我情绪表露（\"我的心也在痛\"）",
+        "quote": "Let it out, old fellow. There is no shame in it.",
+        "severity": "hard"
+      }
+    ],
+    "soft_traits": [
+      "watson_rapport"
+    ],
+    "n_soft": 1,
+    "hits": [
+      {
+        "trait": "emotional_restraint",
+        "pattern": "拥抱/抚摸/握手等肢体温情",
+        "quote": "Holmes crossed the room and put a hand on Watson's shoulder.",
+        "severity": "hard"
+      },
+      {
+        "trait": "emotional_restraint",
+        "pattern": "抒情式共情与自我情绪表露（\"我的心也在痛\"）",
+        "quote": "Let it out, old fellow. There is no shame in it.",
+        "severity": "hard"
+      },
+      {
+        "trait": "watson_rapport",
+        "pattern": "温柔共情、主动安慰关怀",
+        "quote": "Let it out, old fellow.",
+        "severity": "soft"
+      },
+      {
+        "trait": "watson_rapport",
+        "pattern": "温柔共情、主动安慰关怀",
+        "quote": "There is no shame in it.",
+        "severity": "soft"
+      }
+    ],
+    "invalid": [],
+    "ambiguity": [
+      {
+        "trait": "evidence_first",
+        "text": "候选回复主要是对 Watson 的情感安慰，未出现案情指认、定案结论或锁定具体人物；若将“There is no shame in it.”视为一般判断，则未引用可观测细节，但现有 anti_patterns 主要覆盖无依据指认/案情结论，未明确覆盖此类非案情价值判断。"
+      },
+      {
+        "trait": "voice_register",
+        "text": "候选中“Let it out, old fellow. There is no shame in it.”带有安慰/情感支持语气，可能偏离冷静克制，但不属于给定 anti_patterns 中的寒暄、大段抒情感慨/情绪宣泄或替对方做人生决定/宣誓式台词。"
+      }
+    ],
+    "model": "qwen3.8-27b"
+  },
+  {
+    "id": "E01-b",
+    "trait": "emotional_restraint",
+    "probe": "false_alarm",
+    "gold": 2,
+    "sys": 2,
+    "repeat_scores": [
+      2
+    ],
+    "stable": true,
+    "hard_hits": [],
+    "soft_traits": [],
+    "n_soft": 0,
+    "hits": [],
+    "invalid": [],
+    "ambiguity": [
+      {
+        "trait": "moral_flexibility",
+        "text": "候选只说把六岁孩子放到一边、孩子不会说明谁握刀，未出现放走蓄意杀人歹徒或强制送押复仇苦主的明确处置，无法指认到任一 anti_pattern 的逐字片段。"
+      }
+    ],
+    "model": "qwen3.8-27b"
+  },
+  {
+    "id": "E02-a",
+    "trait": "evidence_first",
+    "probe": "leak",
+    "gold": 0,
+    "sys": 0,
+    "repeat_scores": [
+      0
+    ],
+    "stable": true,
+    "hard_hits": [
+      {
+        "trait": "evidence_first",
+        "pattern": "无依据直接指认（\"凶手就是隔壁的面包师\"）",
+        "quote": "He is our man.",
+        "severity": "hard"
+      }
+    ],
+    "soft_traits": [],
+    "n_soft": 0,
+    "hits": [
+      {
+        "trait": "evidence_first",
+        "pattern": "无依据直接指认（\"凶手就是隔壁的面包师\"）",
+        "quote": "He is our man.",
+        "severity": "hard"
+      }
+    ],
+    "invalid": [],
+    "ambiguity": [],
+    "model": "qwen3.8-27b"
+  },
+  {
+    "id": "E02-b",
+    "trait": "evidence_first",
+    "probe": "false_alarm",
+    "gold": 2,
+    "sys": 2,
+    "repeat_scores": [
+      2
+    ],
+    "stable": true,
+    "hard_hits": [],
+    "soft_traits": [],
+    "n_soft": 0,
+    "hits": [],
+    "invalid": [],
+    "ambiguity": [
+      {
+        "trait": "intellectual_appetite",
+        "text": "候选回复只体现要求物证和冷淡判断，未显示对平淡小案兴致勃勃、对顶级谜案无动于衷，也未直接拒绝或生硬逐客，因此无法指认符合 anti_pattern 的逐字片段。"
+      }
+    ],
+    "model": "qwen3.8-27b"
+  },
+  {
+    "id": "E03-a",
+    "trait": "evidence_first",
+    "probe": "false_alarm",
+    "gold": 2,
+    "sys": 2,
+    "repeat_scores": [
+      2
+    ],
+    "stable": true,
+    "hard_hits": [],
+    "soft_traits": [],
+    "n_soft": 0,
+    "hits": [],
+    "invalid": [],
+    "ambiguity": [
+      {
+        "trait": "evidence_first",
+        "text": "“It is enough — I shall name him in the morning.” 可能构成对具体人物的提前锁定，但候选同时引用了 Northampton leather、Trichinopoly ash、clock stopped by hand 等具体细节，且未直接说出指认对象，无法确定是否属于无依据直接指认或缺乏推断链。"
+      },
+      {
+        "trait": "intellectual_appetite",
+        "text": "候选只呈现物证观察与简短结论，未明确显示案件平淡或高难，也未出现兴致勃勃、无动于衷、拒绝委托等可逐字指认的违规片段。"
+      }
+    ],
+    "model": "qwen3.8-27b"
+  },
+  {
+    "id": "E03-b",
+    "trait": "evidence_first",
+    "probe": "false_alarm",
+    "gold": 2,
+    "sys": 2,
+    "repeat_scores": [
+      2
+    ],
+    "stable": true,
+    "hard_hits": [],
+    "soft_traits": [],
+    "n_soft": 0,
+    "hits": [],
+    "invalid": [],
+    "ambiguity": [
+      {
+        "trait": "evidence_first",
+        "text": "“Three facts”未具体引用输入中的可观测细节，但回复未形成指认、定案或附和他人结论，仅表达保留判断并需要时间/线索，不足以判定违反。"
+      },
+      {
+        "trait": "watson_rapport",
+        "text": "想报『不信任华生』，但候选中只有 I do not trust them yet，them 更可能指 facts，且没有明确否定华生判断力、拒绝其参与办案或把华生当外人的逐字片段。"
+      },
+      {
+        "trait": "intellectual_appetite",
+        "text": "候选片段仅表现冷淡、怀疑与延期处理，未明确案件平淡或高智商，也未出现对委托直接拒绝、逐客或对顶级谜案无兴趣，不足以指认 anti_pattern 片段。"
+      }
+    ],
+    "model": "qwen3.8-27b"
+  },
+  {
+    "id": "E04-a",
+    "trait": "era_consistency",
+    "probe": "leak",
+    "gold": 0,
+    "sys": 0,
+    "repeat_scores": [
+      0
+    ],
+    "stable": true,
+    "hard_hits": [
+      {
+        "trait": "era_consistency",
+        "pattern": "以\"否认/拒斥/自嘲\"包装年代外概念 —— 词表命中即违规，否定式不豁免",
+        "quote": "I know nothing of this 'blood grouping' you speak of.",
+        "severity": "hard"
+      }
+    ],
+    "soft_traits": [],
+    "n_soft": 0,
+    "hits": [
+      {
+        "trait": "era_consistency",
+        "pattern": "以\"否认/拒斥/自嘲\"包装年代外概念 —— 词表命中即违规，否定式不豁免",
+        "quote": "I know nothing of this 'blood grouping' you speak of.",
+        "severity": "hard"
+      }
+    ],
+    "invalid": [],
+    "ambiguity": [
+      {
+        "trait": "watson_rapport",
+        "text": "整体语气偏冷，但未出现明确指向华生能力不足、拒绝其参与办案、或拿其健康安危冷嘲的片段。"
+      },
+      {
+        "trait": "intellectual_appetite",
+        "text": "“But bring me the cloth.” 可能显示对物证有兴趣，但不足以证明对平淡小案兴致勃勃、满怀热情，无法指认明确 anti_pattern 片段。"
+      }
+    ],
+    "model": "qwen3.8-27b"
+  },
+  {
+    "id": "E04-b",
+    "trait": "era_consistency",
+    "probe": "false_alarm",
+    "gold": 2,
+    "sys": 2,
+    "repeat_scores": [
+      2
+    ],
+    "stable": true,
+    "hard_hits": [],
+    "soft_traits": [],
+    "n_soft": 0,
+    "hits": [],
+    "invalid": [],
+    "ambiguity": [
+      {
+        "trait": "intellectual_appetite",
+        "text": "候选句只体现对物证的专注，未明确案件是否平淡或顶级无从下手，无法指认具体 anti_pattern 片段。"
+      }
+    ],
+    "model": "qwen3.8-27b"
+  },
+  {
+    "id": "E05-a",
+    "trait": "no_glory_seeking",
+    "probe": "false_alarm",
+    "gold": 2,
+    "sys": 2,
+    "repeat_scores": [
+      2
+    ],
+    "stable": true,
+    "hard_hits": [],
+    "soft_traits": [],
+    "n_soft": 0,
+    "hits": [],
+    "invalid": [],
+    "ambiguity": [
+      {
+        "trait": "watson_rapport",
+        "text": "“Ask Lestrade”可能暗示让华生去问雷斯垂德而非直接告知，但无法确定是否构成拒绝让其参与办案或把华生当外人。"
+      },
+      {
+        "trait": "intellectual_appetite",
+        "text": "候选中的 “Ask Lestrade.” 可能带有打发来访者的语气，但原文没有明确指认这是上门委托，也没有直接拒绝或逐客，因此无法稳定命中 anti_pattern 3。"
+      }
+    ],
+    "model": "qwen3.8-27b"
+  },
+  {
+    "id": "E05-b",
+    "trait": "no_glory_seeking",
+    "probe": "boundary",
+    "gold": 1,
+    "sys": 2,
+    "repeat_scores": [
+      2
+    ],
+    "stable": true,
+    "hard_hits": [],
+    "soft_traits": [],
+    "n_soft": 0,
+    "hits": [],
+    "invalid": [],
+    "ambiguity": [
+      {
+        "trait": "evidence_first",
+        "text": "候选回复含判断性表述（The Yard will take the credit, as it always does.），但没有指认具体人物、没有给出案情结论、也没有直接附和他人结论；无法对应到给定 anti_pattern 原文，因此不计为命中。"
+      },
+      {
+        "trait": "no_glory_seeking",
+        "text": "候选提到“The Yard will take the credit, as it always does.”，但紧接“Let them.”更像冷淡接受或对外部警方的刻薄讽刺，而非公开抱怨、投诉或发怒，无法指认明确违规片段。"
+      }
+    ],
+    "model": "qwen3.8-27b"
+  },
+  {
+    "id": "E06-a",
+    "trait": "voice_register",
+    "probe": "leak",
+    "gold": 0,
+    "sys": 0,
+    "repeat_scores": [
+      0
+    ],
+    "stable": true,
+    "hard_hits": [],
+    "soft_traits": [
+      "voice_register",
+      "watson_rapport"
+    ],
+    "n_soft": 2,
+    "hits": [
+      {
+        "trait": "voice_register",
+        "pattern": "以\"我\"为中心替对方做人生决定 / 宣誓式台词（大男主腔）",
+        "quote": "You are not going.",
+        "severity": "soft"
+      },
+      {
+        "trait": "voice_register",
+        "pattern": "以\"我\"为中心替对方做人生决定 / 宣誓式台词（大男主腔）",
+        "quote": "I forbid it — this is mine to do.",
+        "severity": "soft"
+      },
+      {
+        "trait": "watson_rapport",
+        "pattern": "以对方健康/安危作冷嘲",
+        "quote": "Your heart would give out before the first cab.",
+        "severity": "soft"
+      },
+      {
+        "trait": "watson_rapport",
+        "pattern": "极度刻薄、不信任华生能力，拒绝让他参与办案",
+        "quote": "I forbid it — this is mine to do.",
+        "severity": "soft"
+      }
+    ],
+    "invalid": [],
+    "ambiguity": [
+      {
+        "trait": "evidence_first",
+        "text": "“Your heart would give out before the first cab.” 可被视作对华生身体状况的判断，但未引用输入中的可观测细节；不过它属于豁免清单中的实用关心/接手工作，且不是案情结论或人物指认，因此不计为 evidence_first 命中。"
+      },
+      {
+        "trait": "no_glory_seeking",
+        "text": "“this is mine to do”可能带有自我标榜色彩，但未指向媒体、警方抢功、名誉索取或炫耀推理能力，无法指认到给定 anti_pattern。"
+      },
+      {
+        "trait": "watson_rapport",
+        "text": "“You are not going.” 也显示阻止华生参与，但单独看可能只是命令式关心，未明确否定其判断力，故未另报。"
+      },
+      {
+        "trait": "intellectual_appetite",
+        "text": "候选回复仅表达禁止同行与案件独占，未出现对平淡案件热情、对高难谜案无动于衷或生硬拒客的可指认片段，不能算命中。"
+      }
+    ],
+    "model": "qwen3.8-27b"
+  },
+  {
+    "id": "E06-b",
+    "trait": "voice_register",
+    "probe": "boundary",
+    "gold": 1,
+    "sys": 1,
+    "repeat_scores": [
+      1
+    ],
+    "stable": true,
+    "hard_hits": [],
+    "soft_traits": [
+      "watson_rapport"
+    ],
+    "n_soft": 1,
+    "hits": [
+      {
+        "trait": "watson_rapport",
+        "pattern": "以对方健康/安危作冷嘲",
+        "quote": "The docks at night are no place for a man with your chest.",
+        "severity": "soft"
+      }
+    ],
+    "invalid": [],
+    "ambiguity": [
+      {
+        "trait": "evidence_first",
+        "text": "候选回复中的“with your chest”可能构成对对方身体状况的判断依据，但缺少输入上下文，无法确认是否为输入中可观测细节；且该句更像实用警告/关心，不属于案情结论或指认，故不报。"
+      },
+      {
+        "trait": "voice_register",
+        "text": "候选中“Go home.” 带有命令/劝阻色彩，但更接近实用关心与冷陈述风险，未指认到“以我为中心替对方做人生决定 / 宣誓式台词”的具体宣誓式或大男主腔片段。"
+      },
+      {
+        "trait": "intellectual_appetite",
+        "text": "“Go home”可被理解为生硬逐客，但更贴近实用关心/劝返，且未直接拒绝委托，因此不报命中。"
+      }
+    ],
+    "model": "qwen3.8-27b"
+  },
+  {
+    "id": "E06-c",
+    "trait": "voice_register",
+    "probe": "false_alarm",
+    "gold": 2,
+    "sys": 2,
+    "repeat_scores": [
+      2
+    ],
+    "stable": true,
+    "hard_hits": [],
+    "soft_traits": [],
+    "n_soft": 0,
+    "hits": [],
+    "invalid": [],
+    "ambiguity": [
+      {
+        "trait": "evidence_first",
+        "text": "候选句是对夜间码头行动风险的一般判断，不是案情结论、指认或锁定具体人物，也无法对应给定的 anti_pattern 原文。"
+      },
+      {
+        "trait": "voice_register",
+        "text": "第二句“We go together, or not at all.”带有共同行动决定的意味，但更像实用安全安排，且没有明显寒暄、抒情或以“我”为中心的大男主宣誓腔，因此不直接判为命中。"
+      },
+      {
+        "trait": "watson_rapport",
+        "text": "“The docks at night are no place for either of us alone.” 可能涉及安危判断，但语气是实用保护而非冷嘲、威胁或否定华生能力，无法指认到给定 anti_pattern。"
+      }
+    ],
+    "model": "qwen3.8-27b"
+  },
+  {
+    "id": "E07-a",
+    "trait": "watson_rapport",
+    "probe": "false_alarm",
+    "gold": 2,
+    "sys": 2,
+    "repeat_scores": [
+      2
+    ],
+    "stable": true,
+    "hard_hits": [],
+    "soft_traits": [],
+    "n_soft": 0,
+    "hits": [],
+    "invalid": [],
+    "ambiguity": [
+      {
+        "trait": "evidence_first",
+        "text": "“Wet, yes” 可能是在确认输入中的可观测细节，但仅凭候选句无法确认其是否构成案情结论或指认；没有具体人物锁定、没有直接附和他人结论，不足以判为 evidence_first 违规。"
+      },
+      {
+        "trait": "no_glory_seeking",
+        "text": "“which is the whole difference between us” 带有智力优越感，但并非针对媒体/警方的邀功，也未符合 anti_patterns 中的具体描述。"
+      }
+    ],
+    "model": "qwen3.8-27b"
+  },
+  {
+    "id": "E07-b",
+    "trait": "watson_rapport",
+    "probe": "boundary",
+    "gold": 1,
+    "sys": 1,
+    "repeat_scores": [
+      1
+    ],
+    "stable": true,
+    "hard_hits": [],
+    "soft_traits": [
+      "watson_rapport"
+    ],
+    "n_soft": 1,
+    "hits": [
+      {
+        "trait": "watson_rapport",
+        "pattern": "极度刻薄、不信任华生能力，拒绝让他参与办案",
+        "quote": "You are a good pair of eyes and nothing more.",
+        "severity": "soft"
+      }
+    ],
+    "invalid": [],
+    "ambiguity": [
+      {
+        "trait": "evidence_first",
+        "text": "该句为对华生的评价与分工判断，未给出案情结论、未锁定具体人物，也未直接附和他人案件结论，无法指认违反 evidence_first 的片段。"
+      },
+      {
+        "trait": "no_glory_seeking",
+        "text": "候选句“You are a good pair of eyes and nothing more. Leave the thinking to me.”有强调自己负责思考、贬低华生作用的意味，可能接近自我标榜，但未出现记者/头条、警方抢功、索要名誉赞美，也未明确对应给定 anti_pattern 原文，故不报命中。"
+      },
+      {
+        "trait": "voice_register",
+        "text": "候选句带有对‘华生’的刻薄评价，但规则允许冷嘲热讽，且未出现寒暄、抒情或替对方做人生决定的 anti_pattern。"
+      },
+      {
+        "trait": "intellectual_appetite",
+        "text": "该句仅表达让华生只负责观察、自己负责思考的分工与傲慢，没有平淡小案兴奋、顶级谜案无兴趣或拒绝委托的可指认片段。"
+      }
+    ],
+    "model": "qwen3.8-27b"
+  },
+  {
+    "id": "E08-a",
+    "trait": "moral_flexibility",
+    "probe": "false_alarm",
+    "gold": 2,
+    "sys": 2,
+    "repeat_scores": [
+      2
+    ],
+    "stable": true,
+    "hard_hits": [],
+    "soft_traits": [],
+    "n_soft": 0,
+    "hits": [],
+    "invalid": [],
+    "ambiguity": [
+      {
+        "trait": "evidence_first",
+        "text": "“He killed the man who killed his child — once, and then stopped.” 看似案情结论，但规则明确将“他杀了害死他女儿的人”这类前提句视为复述，不要求附带证据链；且无输入上下文，无法确认这是输入中已有的事实还是新结论。"
+      },
+      {
+        "trait": "voice_register",
+        "text": "第三句“But if he lifts a hand again, I will.”有宣誓式倾向，但对象为外部罪犯且未替对方做人生决定，不指认到 anti_pattern。"
+      }
+    ],
+    "model": "qwen3.8-27b"
+  },
+  {
+    "id": "E08-b",
+    "trait": "moral_flexibility",
+    "probe": "boundary",
+    "gold": 1,
+    "sys": 1,
+    "repeat_scores": [
+      1
+    ],
+    "stable": true,
+    "hard_hits": [],
+    "soft_traits": [
+      "moral_flexibility"
+    ],
+    "n_soft": 1,
+    "hits": [
+      {
+        "trait": "moral_flexibility",
+        "pattern": "无视法律，肆意放走蓄意杀人的歹徒",
+        "quote": "Kill whom you like, so long as you mean it.",
+        "severity": "soft"
+      }
+    ],
+    "invalid": [],
+    "ambiguity": [
+      {
+        "trait": "intellectual_appetite",
+        "text": "“I am busy.” 可能暗示拒绝或逐客，但未明确拒绝委托、未使用生硬逐客措辞，也未显示案件属于平淡小案或顶级谜案，因此不能稳定指认 anti_pattern。"
+      }
+    ],
+    "model": "qwen3.8-27b"
+  }
+]
