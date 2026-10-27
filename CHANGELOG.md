@@ -6,6 +6,7 @@
 
 | 版本 | 日期 | 主题 | 关键产物 |
 | --- | --- | --- | --- |
+| v0.4.1 | 2026-10-27 | 真 HITL：interrupt + 恢复 | 人工裁决节点、三种回传协议、`Command(resume)` 恢复、5 个含中断的用例 |
 | v0.4.0 | 2026-10-27 | LangGraph 状态图闭环 + 判定并发 | 5 节点图、`finalize` 修复、判定并发 155s→30–58s、模型工厂收口、`.env` 编码回退 |
 | v0.3.2 | 2026-10-27 | 闭环跑通（手写串联） | `routing.decide` 纯函数路由、`smoke_loop` 手写闭环、判定耗时暴露 |
 | v0.3.1 | 2026-10-27 | 校验节点接入闭环 | `VerifyNode` 全轴判定、未完成不许当通过、5 个离线用例 |
@@ -16,6 +17,51 @@
 | v0.2.1 | 2026-10-27 | 判定器模块化重构 + 运行时保护 | 10 个模块分层、`ChatModel` ABC、preflight、逐 trait 进度、失败熔断、离线单测 |
 | v0.2.0 | 2026-10-26 | 判定器跨 trait 评测 + 首次留出集盲跑 | `--fanout`、区间去重聚合、`--cases`、留出集 E01–E08、GBK 崩栈修复 |
 | v0.1.0 | 2026-10-26 | 初始项目导入与版本化 | 一致性规格书、黄金测试集、人设卡、评测脚本与对比报告 |
+
+---
+
+## v0.4.1 · 2026-10-27 · 真 HITL：interrupt + 恢复
+
+### 1. 原有缺陷
+
+- `human` 节点只是"打标记 → END"，**没有真中断**：图不会停，人也没有机会看现场。
+  README 里宣称的 HITL 一直是张空头支票。
+- 即使中断了，人工裁决的三种结果（放行 / 手改 / 放弃）没有协议，也没留痕，
+  "人工放行"无法计入漏杀统计。
+
+### 2. 改进技术
+
+- `human` 节点改用 `langgraph.types.interrupt()` 挂起整图，payload 抛给 CLI：
+  草稿 + 分数 + 违规证据清单。
+- 三种回传协议：`accept`（强制通过）/ `edit:<文本>`（采用人工改写）/ `abandon`（放弃），
+  由调用方用 `Command(resume=...)` 送回图继续执行。
+- **每种决定都留痕**：`accepted_by_human` / `edited_by_human` / `abandoned` 写进 trace 与
+  `needs_human` 字段。人工放行等于"系统本该拦却让过"，是漏杀统计的一部分，不能当通过。
+- `build_graph` 总是配 `MemorySaver`：没有 checkpointer 就没有地方存现场，interrupt 无法恢复。
+- CLI（`run_graph`）打印裁决材料并读 `[a]/[e]/[r]`，恢复执行后统一输出结果。
+
+### 3. 对应代码位置
+
+- `src/graph/builder.py`：`human_node()`（interrupt + 三种协议）、`build_graph(checkpointer=...)`、
+  常量 `ACCEPT` / `ABANDON` / `EDIT_PREFIX`
+- `src/cli/run_graph.py`：`_ask_human()`、`Command(resume=...)` 恢复分支
+- `tests/graph/test_builder.py`：扩到 5 个用例，全部走真实 interrupt / resume
+
+### 4. 验证流程
+
+```bash
+python -m tests.graph.test_builder
+python -m src.cli.run_graph
+```
+
+实测结果：
+
+- `test_builder` **5/5 通过**，其中三个是真实中断用例：
+  - 持续 drift → 挂起，`__interrupt__` 里带草稿与违规证据，且挂起前已写满 3 稿；
+  - `resume=accept` → `final == 草稿`，trace 记 `accepted_by_human`；
+  - `resume=edit:<文本>` → `final == 人工改稿`，trace 记 `edited_by_human`；
+  - `resume=abandon` → `final == ""`，trace 记 `abandoned`。
+- 全量离线用例：judge 18 + graph 19 = **37/37 通过**；两个 CLI 入口 import 正常。
 
 ---
 
