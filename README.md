@@ -36,19 +36,31 @@ src/                       ← 代码（W1 开始，一个节点一个函数地�
 
 ## 环境
 
-Python 3.12 / git 已就绪。依赖只有 `pyyaml`，网络走标准库 `urllib`，不需要装 SDK。
+Python 3.12 / git 已就绪。核心判定与闭环只依赖 `pyyaml`（网络走标准库 `urllib`）；
+演示界面另需 `streamlit`，MCP 另需 `mcp`。
 
-## 运行（v0.2.1 起）
+## 运行
+
+**演示界面（推荐先跑这个）**
+
+```bash
+streamlit run src/web/app.py
+```
+
+**命令行**
 
 ```bash
 python -m tests.judge.test_aggregator        # 离线单测，不联网
 python -m tests.judge.test_quote_validator   # 离线单测，不联网
 python -m src.cli.eval.run_judge --limit 1 --dry  # 只看提示词，不发请求
 python -m src.cli.eval.run_judge --fanout --cases data/golden/golden_holdout.json --json-out reports/holdout_run_03.json
+python -m src.cli.serve.run_graph --json-out reports/traces/run01.json
+python -m src.cli.eval.cost_report
 ```
 
 > Windows 下命令一律写成**单行**（不支持 bash 的 `\` 续行）。
 
-模块分层、数据流与设计取舍见 [docs/08-判定器模块结构.md](docs/08-判定器模块结构.md)。
-旧的 `python src/judge.py` 已废弃。
+模块分层、数据流与设计取舍见 [docs/08-判定器模块结构.md](docs/08-判定器模块结构.md)
+与 [docs/09-闭环与状态图.md](docs/09-闭环与状态图.md)。旧的 `python src/judge.py` 已废弃。
+
 

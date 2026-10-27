@@ -6,6 +6,7 @@
 
 | 版本 | 日期 | 主题 | 关键产物 |
 | --- | --- | --- | --- |
+| v0.7.0 | 2026-10-27 | 演示界面（Streamlit） | `src/web/app.py` 双页签：创作台（含真 HITL 交互与实测时间线）、指标看板（读真实结果文件） |
 | v0.6.2 | 2026-10-27 | 结构整改批次 B | `src/cli/` 拆 `eval/`（离线评测）与 `serve/`（运行时入口），文档与测试 import 同步 |
 | v0.6.1 | 2026-10-27 | 结构整改批次 A | 数据迁至 `data/golden/`、运维脚本迁至 `tests/scripts/`、`tools/` 并入 `src/cli/tools/`、12 个文档路径同步 |
 | v0.6.0 | 2026-10-27 | 成本/延迟汇总 + 结构自查 | `cost_report`（实测延迟 + 估算 tokens/成本）、trace 落盘、`docs/12` 合规自查与三批整改计划 |
@@ -24,6 +25,54 @@
 | v0.2.1 | 2026-10-27 | 判定器模块化重构 + 运行时保护 | 10 个模块分层、`ChatModel` ABC、preflight、逐 trait 进度、失败熔断、离线单测 |
 | v0.2.0 | 2026-10-26 | 判定器跨 trait 评测 + 首次留出集盲跑 | `--fanout`、区间去重聚合、`--cases`、留出集 E01–E08、GBK 崩栈修复 |
 | v0.1.0 | 2026-10-26 | 初始项目导入与版本化 | 一致性规格书、黄金测试集、人设卡、评测脚本与对比报告 |
+
+---
+
+## v0.7.0 · 2026-10-27 · 演示界面（Streamlit）
+
+### 1. 原有缺陷
+
+- 全部能力只在命令行，**没有可演示的界面**；而课程检查要求"介绍前端页面并录讲解视频"，
+  纯 CLI 无法满足。
+- 闭环的杀手级证据（第一稿被打回、第二稿通过、判定占 90% 耗时）只存在于终端滚动输出里，
+  演示时讲不清。
+
+### 2. 改进技术
+
+- 新增 `src/web/app.py`（Streamlit 单页，双页签），**零 HTTP 层**：页面内直接
+  `build_graph()` + `graph.invoke()`，与 CLI、评测脚本共用同一套节点与判定逻辑。
+- 创作台：
+  - 情境预设（含"会触发打回"的场景，方便演示）；
+  - `score` 徽章 + 违规证据（每条带可在原文逐字定位的引文）；
+  - **真 HITL 交互**：图中断后页面出现「强制通过 / 手改 / 放弃」，用 `Command(resume=...)` 恢复；
+  - 右侧时间线用 `trace` 的实测 `ms` 渲染，判定占比一眼可见。
+- 指标看板：从 `reports/holdout_F_run_01.json` 与 `reports/traces/*.json` **读真实文件**，
+  没有文件就提示"先跑一次"，绝不写死数字。
+- 模型客户端与图用 `st.cache_resource` 缓存；每次运行生成独立 `thread_id`，避免 HITL 现场串台。
+- 依赖：`streamlit` 装入 `E:\Anaconda_download\envs\py312_env`（pip 镜像）。
+- 文档：`docs/09` 新增第十节（界面三个取舍与局限），README 补演示界面命令。
+
+### 3. 对应代码位置
+
+- `src/web/app.py`：`_run()` / `_resume()` / `_tab_create()` / `_render_human()` /
+  `_tab_metrics()` / `_holdout_stats()`
+- `src/web/__init__.py`（职责说明）
+- `docs/09-闭环与状态图.md`：第十节
+- `README.md`：运行章节
+
+### 4. 验证流程
+
+```bash
+python -c "import src.web.app"                                  # 导入与依赖检查
+python -m streamlit run src/web/app.py --server.headless true --server.port 8511
+curl http://127.0.0.1:8511/_stcore/health                       # 期望 ok
+```
+
+实测结果：
+
+- 导入通过；headless 启动成功，健康检查返回 `ok`。
+- 页面启动不触发模型调用（图与客户端懒加载），只有点「生成并校验」才真正花钱。
+- 全量离线用例不受影响：61/61 通过（本次未改判定与图逻辑）。
 
 ---
 
