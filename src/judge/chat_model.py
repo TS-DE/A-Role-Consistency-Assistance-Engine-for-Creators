@@ -116,15 +116,34 @@ class OpenAICompatChatModel(ChatModel):
 
 
 # ── 工厂：模型构造只在这一个文件里，CLI 不许自己拼 env ──────────
+def _backend() -> str:
+    """后端选择：urllib（默认，评测用）或 langchain（可观测，演示/排查用）。"""
+    return (EnvLoader.get("MODEL_BACKEND") or "urllib").lower()
+
+
+def _make(model: str, base_url: str | None, api_key: str | None, temperature: float) -> ChatModel:
+    if _backend() == "langchain":
+        # 延迟 import：避免 chat_model ←→ langchain_model 循环依赖
+        from src.judge.langchain_model import LangChainChatModel
+
+        return LangChainChatModel(
+            model, base_url=base_url, api_key=api_key, temperature=temperature
+        )
+    return OpenAICompatChatModel(
+        model, base_url=base_url, api_key=api_key, timeout=DEFAULT_TIMEOUT, retries=DEFAULT_RETRIES
+    )
+
+
 def build_generator_model() -> ChatModel:
     """生成侧：优先 LLM_*（写台词用文笔更好的模型）。"""
     model = EnvLoader.get("LLM_MODEL", "JUDGE_MODEL")
     if not model:
         raise ChatModelError("未配置 LLM_MODEL / JUDGE_MODEL")
-    return OpenAICompatChatModel(
+    return _make(
         model,
-        base_url=EnvLoader.get("LLM_BASE_URL", "JUDGE_BASE_URL"),
-        api_key=EnvLoader.get("LLM_API_KEY", "JUDGE_API_KEY"),
+        EnvLoader.get("LLM_BASE_URL", "JUDGE_BASE_URL"),
+        EnvLoader.get("LLM_API_KEY", "JUDGE_API_KEY"),
+        temperature=0.8,
     )
 
 
@@ -133,8 +152,9 @@ def build_judge_model() -> ChatModel:
     model = EnvLoader.get("JUDGE_MODEL", "LLM_MODEL")
     if not model:
         raise ChatModelError("未配置 JUDGE_MODEL / LLM_MODEL")
-    return OpenAICompatChatModel(
+    return _make(
         model,
-        base_url=EnvLoader.get("JUDGE_BASE_URL", "LLM_BASE_URL"),
-        api_key=EnvLoader.get("JUDGE_API_KEY", "LLM_API_KEY"),
+        EnvLoader.get("JUDGE_BASE_URL", "LLM_BASE_URL"),
+        EnvLoader.get("JUDGE_API_KEY", "LLM_API_KEY"),
+        temperature=0.0,
     )

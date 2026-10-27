@@ -6,6 +6,7 @@
 
 | 版本 | 日期 | 主题 | 关键产物 |
 | --- | --- | --- | --- |
+| v0.4.2 | 2026-10-27 | LangChain 适配器 + LangSmith 自检 | `LangChainChatModel`、`MODEL_BACKEND` 切换、`check_observability`、4 个用例 |
 | v0.4.1 | 2026-10-27 | 真 HITL：interrupt + 恢复 | 人工裁决节点、三种回传协议、`Command(resume)` 恢复、5 个含中断的用例 |
 | v0.4.0 | 2026-10-27 | LangGraph 状态图闭环 + 判定并发 | 5 节点图、`finalize` 修复、判定并发 155s→30–58s、模型工厂收口、`.env` 编码回退 |
 | v0.3.2 | 2026-10-27 | 闭环跑通（手写串联） | `routing.decide` 纯函数路由、`smoke_loop` 手写闭环、判定耗时暴露 |
@@ -17,6 +18,52 @@
 | v0.2.1 | 2026-10-27 | 判定器模块化重构 + 运行时保护 | 10 个模块分层、`ChatModel` ABC、preflight、逐 trait 进度、失败熔断、离线单测 |
 | v0.2.0 | 2026-10-26 | 判定器跨 trait 评测 + 首次留出集盲跑 | `--fanout`、区间去重聚合、`--cases`、留出集 E01–E08、GBK 崩栈修复 |
 | v0.1.0 | 2026-10-26 | 初始项目导入与版本化 | 一致性规格书、黄金测试集、人设卡、评测脚本与对比报告 |
+
+---
+
+## v0.4.2 · 2026-10-27 · LangChain 适配器 + LangSmith 自检
+
+### 1. 原有缺陷
+
+- **判定与生成的模型调用是裸 urllib**：LangSmith 只追踪 LangChain/LangGraph 的 runnable，
+  所以即使开了 tracing，也只能看到节点级 span，**看不到 prompt、回复、token 用量**——
+  那恰好是排查"判定为什么不一致"最需要的三样。
+- 项目里没有一行 LangChain 代码，而课程要求技术栈必须落地；强行塞一个无关的 chain 只会减分。
+- 没有一条命令能回答"LangSmith 到底能不能用"。
+
+### 2. 改进技术
+
+- 新增 `LangChainChatModel`（`ChatModel` 的第二个实现）：底层换成 `langchain_openai.ChatOpenAI`。
+  **换后端只新增一个子类，编排层与节点零改动** —— 这是 DIP 第一次真正兑现。
+  附带收益：LangSmith 能看到完整的 LLM span。
+- `MODEL_BACKEND=urllib|langchain` 开关（默认 urllib）：
+  评测脚本要跑几百次、要盯失败率 → urllib 零依赖、错误直白；
+  演示与排查要可观测 → langchain。
+- 新增 `src/cli/check_observability.py`：四层自检（网络 `/health` → key 是否配置 →
+  官方客户端鉴权 → 追踪环境变量），并对"只开 tracing 仍看不到 urllib 调用"给出明确提示。
+
+### 3. 对应代码位置
+
+- `src/judge/langchain_model.py`：`LangChainChatModel`（消息转换 + 注入式 chat，便于离线测试）
+- `src/judge/chat_model.py`：`_backend()`、`_make()`，工厂支持后端切换
+- `src/cli/check_observability.py`：`_health()` / `_key()` / `_auth()` / `_trace_env()`
+- `tests/judge/test_langchain_model.py`（新增，4 个用例）
+
+### 4. 验证流程
+
+```bash
+python -m tests.judge.test_langchain_model
+python -m src.cli.check_observability
+```
+
+实测结果：
+
+- `test_langchain_model` 4/4：system/human 角色正确转换、未知角色回落 human、返回字符串内容、
+  `model` 属性可用于记录仪器名。
+- `check_observability`：`/health` 返回 `200 {"ok":true}`；未配置 key → 输出获取途径与三行配置，exit 0。
+- 全量离线用例：judge 22 + graph 19 = **41/41 通过**；三个 CLI 入口 import 正常。
+- 待办：拿到 key 后打开 `LANGSMITH_TRACING=true`，跑一次 `run_graph` 核对 LangSmith 上是否出现
+  节点与 LLM 两层 span。
 
 ---
 
