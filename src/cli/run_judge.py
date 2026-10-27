@@ -1,6 +1,6 @@
 """评测入口：批量跑候选，出三档指标。
 
-    python -m src.cli.run_judge --fanout --cases tests/golden_holdout.json
+    python -m src.cli.run_judge --fanout --cases data/golden/golden_holdout.json
 """
 
 from __future__ import annotations
@@ -32,7 +32,7 @@ def _force_utf8_stdout() -> None:
 
 def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="角色一致性判定器（批量评测）")
-    parser.add_argument("--cases", help="测试集文件（默认 tests/golden_cases.json）")
+    parser.add_argument("--cases", help="测试集文件（默认 data/golden/golden_cases.json）")
     parser.add_argument("--limit", type=int, help="只跑前 N 条候选")
     parser.add_argument("--ids", help="只跑指定候选 id，逗号分隔")
     parser.add_argument("--trait", help="只跑某个 trait")

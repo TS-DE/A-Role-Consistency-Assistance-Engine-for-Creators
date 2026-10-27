@@ -1,6 +1,6 @@
 """黄金测试集结构校验 + 分布报告。
 
-用法： python tests/validate_golden.py
+用法： python -m tests.scripts.validate_golden
 退出码：0 = 通过，1 = 有错。
 
 它只做"体检"，不跑 LLM —— W1 就能用，不必等校验器写完。
@@ -14,8 +14,8 @@ import sys
 from collections import Counter
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
-GOLDEN = ROOT / "tests" / "golden_cases.json"
+ROOT = Path(__file__).resolve().parents[2]
+GOLDEN = ROOT / "data" / "golden" / "golden_cases.json"
 
 REQUIRED_CASE = {"id", "trait", "category", "input", "input_lang", "lang", "candidates"}
 REQUIRED_CAND = {"id", "trait", "probe", "gold", "text"}

@@ -23,8 +23,8 @@ from collections import Counter
 from itertools import combinations
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
-GOLD_PATH = ROOT / "tests" / "golden_cases.json"
+ROOT = Path(__file__).resolve().parents[2]
+GOLD_PATH = ROOT / "data" / "golden" / "golden_cases.json"
 HUMAN_MD = ROOT / "scoring_rounds.md"
 
 SOURCES = {

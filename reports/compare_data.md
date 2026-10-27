@@ -1,6 +1,6 @@
 # 多方对比数据（gold vs 各标注者）
 
-> 由 `tests/compare_rounds.py` 自动生成，勿手改。
+> 由 `tests/scripts/compare_rounds.py` 自动生成，勿手改。
 > 手写分析：`docs/04`（三方）、`docs/06`（首轮人工）、`docs/07`（A03 泄漏审计）。
 
 
@@ -43,7 +43,7 @@
 | D03-a | no_glory_seeking | leak | 0 | 0 | 0 | 0 | 0 | — | ✅ |
 | D03-b | no_glory_seeking | false_alarm | 2 | 2 | 2 | 2 | 2 | — | ✅ |
 | D04-a | emotional_restraint | leak | 0 | 0 | 0 | 0 | 0 | — | ✅ |
-| D04-b | emotional_restraint | boundary | 1 | 1 | 1 | 1 | 2 | 1 | ❌ |
+| D04-b | watson_rapport | boundary | 1 | 1 | 1 | 1 | 2 | 1 | ❌ |
 | D04-c | emotional_restraint | false_alarm | 2 | 2 | 2 | 2 | 2 | — | ✅ |
 | D04-d | voice_register | boundary | 1 | 1 | 1 | 1 | 0 | 1 | ❌ |
 | D05-a | evidence_first | leak | 0 | 0 | 0 | 0 | 1 | 0 | ❌ |

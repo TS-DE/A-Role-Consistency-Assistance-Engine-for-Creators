@@ -2,7 +2,7 @@
 
 ## 使用说明
 
-- 评分依据只有两样：`docs/01-一致性规格书.md` 和校验 prompt。**禁止**打开 `tests/golden_cases.json` 对照，打分期间把它当不存在。
+- 评分依据只有两样：`docs/01-一致性规格书.md` 和校验 prompt。**禁止**打开 `data/golden/golden_cases.json` 对照，打分期间把它当不存在。
 - 候选文本见根目录 `golden_cases_masked.json`（gold / probe / 泄题 note 已遮掉）。
 - 每轮一张表，打完**另起一张新表**记下一轮，不许覆盖旧记录。
 - 评分口径：0 = OOC（出戏）/ 1 = drift（有偏差但角色还成立）/ 2 = pass（符合人设）。

@@ -25,8 +25,8 @@ import re
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
-GOLD = ROOT / "tests" / "golden_cases.json"
+ROOT = Path(__file__).resolve().parents[2]
+GOLD = ROOT / "data" / "golden" / "golden_cases.json"
 DEFAULT = ROOT / "data" / "characters" / "sherlock.yaml"
 
 PROBE_ID = re.compile(r"D\d{2}-[a-d]")

@@ -9,8 +9,10 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DATA_DIR = PROJECT_ROOT / "data" / "characters"
 JUDGE_YAML = DATA_DIR / "sherlock.judge.yaml"
-GOLDEN_JSON = PROJECT_ROOT / "tests" / "golden_cases.json"
-HOLDOUT_JSON = PROJECT_ROOT / "tests" / "golden_holdout.json"
+GOLDEN_DIR = PROJECT_ROOT / "data" / "golden"
+GOLDEN_JSON = GOLDEN_DIR / "golden_cases.json"
+HOLDOUT_JSON = GOLDEN_DIR / "golden_holdout.json"
+HOLDOUT_F_JSON = GOLDEN_DIR / "golden_holdout_f.json"
 REPORTS_DIR = PROJECT_ROOT / "reports"
 
 # ── 评分档位（与规格书 §一 一致）──────────────────────────────

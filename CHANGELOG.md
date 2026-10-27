@@ -6,6 +6,7 @@
 
 | 版本 | 日期 | 主题 | 关键产物 |
 | --- | --- | --- | --- |
+| v0.6.1 | 2026-10-27 | 结构整改批次 A | 数据迁至 `data/golden/`、运维脚本迁至 `tests/scripts/`、`tools/` 并入 `src/cli/tools/`、12 个文档路径同步 |
 | v0.6.0 | 2026-10-27 | 成本/延迟汇总 + 结构自查 | `cost_report`（实测延迟 + 估算 tokens/成本）、trace 落盘、`docs/12` 合规自查与三批整改计划 |
 | v0.5.1 | 2026-10-27 | MCP 能力外置 | 三个 MCP 工具、stdio server、`--selftest`、8 个用例、`docs/11` 接入指南 |
 | v0.5.0 | 2026-10-27 | 生成质量评估 | `docs/10` 评分方案、可填打分表 CSV、汇总脚本（均分/可用率/硬伤率/改写增益/同向性）、6 个用例 |
@@ -22,6 +23,51 @@
 | v0.2.1 | 2026-10-27 | 判定器模块化重构 + 运行时保护 | 10 个模块分层、`ChatModel` ABC、preflight、逐 trait 进度、失败熔断、离线单测 |
 | v0.2.0 | 2026-10-26 | 判定器跨 trait 评测 + 首次留出集盲跑 | `--fanout`、区间去重聚合、`--cases`、留出集 E01–E08、GBK 崩栈修复 |
 | v0.1.0 | 2026-10-26 | 初始项目导入与版本化 | 一致性规格书、黄金测试集、人设卡、评测脚本与对比报告 |
+
+---
+
+## v0.6.1 · 2026-10-27 · 结构整改批次 A
+
+### 1. 原有缺陷
+
+- 违反《通用约束提示词》第二节的目录规则：`tests/` 根同时躺着 3 个脚本与 3 个 golden JSON
+  （父目录裸文件 + 同类 ≥3 未归档）；`tools/` 下 1 个源码工具落在 `src/` 之外。
+- 数据与代码混在一起，换数据集就要动测试目录结构。
+
+### 2. 改进技术
+
+- 数据分层：`data/golden/` 收纳三套测试集，并补 `README.md` 说明 **dev / 回归 / 留出** 三种身份
+  与修改纪律（改留出集等于换仪器）。
+- 运维脚本分层：`tests/scripts/` 收纳 `validate_golden` / `compare_rounds` / `audit_leakage`，
+  补 `__init__.py` 说明必须用 `python -m` 跑（脚本内依赖 `from src.*` 的包导入）。
+- 源码工具归位：`tools/build_judge_yaml.py` → `src/cli/tools/build_judge_yaml.py`，`tools/` 目录清空删除。
+- 路径常量同步：`constants.py` 增加 `GOLDEN_DIR` 与 `HOLDOUT_F_JSON`；
+  三个脚本的 `ROOT` 各退一层，`build_judge_yaml` 因多了一层目录改为 `parents[3]`。
+- 12 个文档里的旧命令与旧路径批量改到新位置，`docs/12` 的整改计划表保留为历史记录。
+
+### 3. 对应代码位置
+
+- `src/judge/constants.py`：`GOLDEN_DIR` / `GOLDEN_JSON` / `HOLDOUT_JSON` / `HOLDOUT_F_JSON`
+- `tests/scripts/{validate_golden,compare_rounds,audit_leakage}.py`：`ROOT` 与 `GOLD*` 路径
+- `src/cli/tools/build_judge_yaml.py`：`ROOT = parents[3]`
+- `data/golden/README.md`、`tests/scripts/__init__.py`、`src/cli/tools/__init__.py`（新增）
+- `docs/12-结构合规自查.md`：批次 A 执行结果与经验
+
+### 4. 验证流程
+
+路径迁移的风险不在 import，而在**静默找不到文件**，所以四个入口都真的跑了一遍：
+
+```bash
+python -m tests.scripts.validate_golden            # 结构校验通过
+python -m tests.scripts.compare_rounds             # 24/31 = 77.4%（与迁移前一致）
+python -m tests.scripts.audit_leakage data/characters/sherlock.judge.yaml
+python -m src.cli.tools.build_judge_yaml           # 重建 10788 字符
+python -m src.cli.run_judge --cases data/golden/golden_holdout_f.json --limit 1 --dry
+```
+
+- 全部离线用例：**61/61 通过**（judge 22 + graph 19 + gen 6 + mcp 8 + cli 6）。
+- 文档复查：`grep` 旧路径已无残留（仅 `docs/12` 的历史计划表保留对照）。
+- 结论：批次 A 干净，可以进入批次 B（`src/cli` 分 `eval/` 与 `serve/`）。
 
 ---
 
@@ -459,7 +505,7 @@ python -m tests.judge.test_aggregator; python -m tests.judge.test_quote_validato
 
 - `test_generate` 4/4 通过；判定域 18 个用例无回归，**合计 22/22**。
 - 行数：`state.py` 49 行、`generate.py` 58 行，均远低于 300 行上限。
-- 冒烟：`python -m src.cli.run_judge --cases tests/golden_holdout_f.json --limit 1`
+- 冒烟：`python -m src.cli.run_judge --cases data/golden/golden_holdout_f.json --limit 1`
   在新模型 `qwen3.8-max-0902` 上连通正常、判定 1/1。
 
 ---
@@ -493,7 +539,7 @@ python -m tests.judge.test_aggregator; python -m tests.judge.test_quote_validato
 ### 4. 验证流程
 
 ```bash
-python -m src.cli.run_judge --fanout --cases tests/golden_holdout_f.json --json-out reports/holdout_F_run_01.json
+python -m src.cli.run_judge --fanout --cases data/golden/golden_holdout_f.json --json-out reports/holdout_F_run_01.json
 ```
 
 实测结果（qwen3.8-27b，2026-10-27，单次）：
@@ -530,7 +576,7 @@ python -m src.cli.run_judge --fanout --cases tests/golden_holdout_f.json --json-
 
 ### 3. 对应代码位置
 
-- `tests/golden_holdout_f.json`（新增，留出集）
+- `data/golden/golden_holdout_f.json`（新增，留出集）
 - `data/characters/sherlock.yaml`：`no_glory_seeking.anti_patterns` 新增 soft 条目
 - `docs/07-A03泄漏审计.md`：新增第七节「留出集的退役规则」
 - `data/characters/sherlock.judge.yaml`：重建（10811 字符）
@@ -538,9 +584,9 @@ python -m src.cli.run_judge --fanout --cases tests/golden_holdout_f.json --json-
 ### 4. 验证流程
 
 ```bash
-python -c "import json;json.load(open('tests/golden_holdout_f.json',encoding='utf-8'))"   # 结构
-python tools/build_judge_yaml.py
-python tests/audit_leakage.py data/characters/sherlock.judge.yaml
+python -c "import json;json.load(open('data/golden/golden_holdout_f.json',encoding='utf-8'))"   # 结构
+python -m src.cli.tools.build_judge_yaml
+python -m tests.scripts.audit_leakage data/characters/sherlock.judge.yaml
 python -m tests.judge.test_aggregator && python -m tests.judge.test_quote_validator && python -m tests.judge.test_evaluator
 ```
 
@@ -587,7 +633,7 @@ python -m tests.judge.test_aggregator && python -m tests.judge.test_quote_valida
 python -m tests.judge.test_aggregator        # 7 个用例
 python -m tests.judge.test_quote_validator   # 8 个用例
 python -m tests.judge.test_evaluator         # 3 个用例
-python -m src.cli.run_judge --fanout --cases tests/golden_holdout.json --json-out reports/holdout_run_04.json
+python -m src.cli.run_judge --fanout --cases data/golden/golden_holdout.json --json-out reports/holdout_run_04.json
 ```
 
 实测结果：
@@ -639,8 +685,8 @@ python -m src.cli.run_judge --fanout --cases tests/golden_holdout.json --json-ou
 ```bash
 python -m tests.judge.test_aggregator        # 期望：7 个用例通过
 python -m tests.judge.test_quote_validator   # 期望：8 个用例通过
-python -m src.cli.run_judge --cases tests/golden_holdout.json --limit 1 --dry   # 只打提示词
-python -m src.cli.run_judge --fanout --cases tests/golden_holdout.json --json-out reports/holdout_run_03.json
+python -m src.cli.run_judge --cases data/golden/golden_holdout.json --limit 1 --dry   # 只打提示词
+python -m src.cli.run_judge --fanout --cases data/golden/golden_holdout.json --json-out reports/holdout_run_03.json
 ```
 
 实测结果：
@@ -664,15 +710,15 @@ python -m src.cli.run_judge --fanout --cases tests/golden_holdout.json --json-ou
   单处漂移被双计成 2 条 soft 直接判 0（D09-c：`Oh, how dreadful for poor Lestrade!` vs 整句）。
 - **两条 anti_pattern 过宽**：「把无关细节/职业特征当作罪证」不要求"据此定案"，把仅是怀疑的句子判 0（D05-c / E08-a）；「给出结论但完全不回溯证据」不限定"案情结论"，把"这案子归我"判 0（D04-d）。
 - **无留出集**：全部数字都在 dev 上产生，无法回答"规则是否泛化"。
-- **判定器不能指向其他测试集**：只能读死 `tests/golden_cases.json`。
+- **判定器不能指向其他测试集**：只能读死 `data/golden/golden_cases.json`。
 - **GBK 控制台下崩溃**：打印 ✅ 抛 `UnicodeEncodeError`，跑到一半中断且已消耗模型调用。
 
 ### 2. 改进技术
 
-- 规格改动后强制重建判定输入（`tools/build_judge_yaml.py`），并以 mtime 校验 judge 版晚于人读版。
+- 规格改动后强制重建判定输入（`src/cli/tools/build_judge_yaml.py`），并以 mtime 校验 judge 版晚于人读版。
 - 跨 trait 去重改为**区间重叠判定**：`_span_of()` 把引文映射回候选文本的字符区间，`_overlaps()` 判重叠；支持省略号拼接的多段引文。
 - 两条 anti_pattern 收窄：加「并据此宣称其为罪犯/定案」「仅限**案情**结论」限定，并注明"只表达可疑 + 提议核查"走 soft。
-- 新增 `--cases` 参数；新增留出集 `tests/golden_holdout.json`（E01–E08 / 17 条判定样本），
+- 新增 `--cases` 参数；新增留出集 `data/golden/golden_holdout.json`（E01–E08 / 17 条判定样本），
   按"同轴不同皮、先定 gold 再跑、每条附 `canon_note`"三条纪律编写，且由未参与调规则的一方写。
 - 启动时把 stdout/stderr 钉为 UTF-8（`_force_utf8_stdout`），GBK 控制台不再崩溃。
 
@@ -685,15 +731,15 @@ python -m src.cli.run_judge --fanout --cases tests/golden_holdout.json --json-ou
   - `selftest()`：新增"跨 trait 同句不同截断只计 1 条"断言
 - `data/characters/sherlock.yaml`：`evidence_first.anti_patterns` 两条 pattern 收窄（L105、L112）
 - `data/characters/sherlock.judge.yaml`：重建（296 行 / 10481 字符）
-- `tests/golden_holdout.json`：新增
+- `data/golden/golden_holdout.json`：新增
 
 ### 4. 验证流程
 
 ```bash
-python tools/build_judge_yaml.py
+python -m src.cli.tools.build_judge_yaml
 python src/judge.py --selftest
-python tests/audit_leakage.py data/characters/sherlock.judge.yaml
-python src/judge.py --fanout --cases tests/golden_holdout.json --json-out reports/holdout_run_01.json
+python -m tests.scripts.audit_leakage data/characters/sherlock.judge.yaml
+python src/judge.py --fanout --cases data/golden/golden_holdout.json --json-out reports/holdout_run_01.json
 ```
 
 实测结果：

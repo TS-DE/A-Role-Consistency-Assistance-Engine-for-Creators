@@ -22,7 +22,7 @@ A03 的 31/31 有一部分是这么来的（见 docs/07）。
 注意：这不解决"example_bad 就是测试候选原文"的问题（那是数据层面的污染，
 只能靠换测试样本解决，见 docs/07 §三）。本脚本只解决"标注泄漏"。
 
-运行:  py -3 tools/build_judge_yaml.py
+运行:  python -m src.cli.tools.build_judge_yaml
 输出:  data/characters/sherlock.judge.yaml
 """
 
@@ -34,7 +34,7 @@ from pathlib import Path
 
 import yaml
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[3]
 SRC = ROOT / "data" / "characters" / "sherlock.yaml"
 DST = ROOT / "data" / "characters" / "sherlock.judge.yaml"
 
