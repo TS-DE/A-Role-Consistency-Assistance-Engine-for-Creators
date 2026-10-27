@@ -12,8 +12,11 @@
 
 from __future__ import annotations
 
+import argparse
+import json
 import sys
 import time
+from pathlib import Path
 
 from langgraph.types import Command
 
@@ -58,9 +61,30 @@ def _ask_human(payload: dict) -> str:
     return ABANDON
 
 
+def _parse_args(argv: list[str] | None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="走状态图跑一次闭环")
+    parser.add_argument("scene", nargs="?", default=DEFAULT_SCENE, help="创作者给的情境")
+    parser.add_argument("--json-out", help="把本次 trace 落盘，供成本/延迟汇总（cost_report 读取）")
+    return parser.parse_args(argv)
+
+
+def _build_record(scene: str, gen_model: str, judge_model: str,
+                  state: GraphState, total_ms: int) -> dict:
+    """成本/延迟汇总要用的一条记录。字段保持扁平，便于脚本直接读。"""
+    return {
+        "scene": scene,
+        "models": {"generate": gen_model, "judge": judge_model},
+        "attempt": state.get("attempt", 0),
+        "final_score": state.get("score"),
+        "needs_human": bool(state.get("needs_human", False)),
+        "total_ms": total_ms,
+        "nodes": [dict(item) for item in state.get("trace", [])],
+    }
+
+
 def main(argv: list[str] | None = None) -> int:
-    args = argv if argv is not None else sys.argv[1:]
-    scene = args[0] if args else DEFAULT_SCENE
+    args = _parse_args(argv)
+    scene = args.scene
 
     EnvLoader().load()
     spec = SpecLoader().load()
@@ -88,6 +112,12 @@ def main(argv: list[str] | None = None) -> int:
     elapsed = time.perf_counter() - started
 
     _print_result(result, elapsed)
+    if args.json_out:
+        record = _build_record(scene, generator.model, judge.model, result, int(elapsed * 1000))
+        out = Path(args.json_out)
+        out.parent.mkdir(parents=True, exist_ok=True)   # 目录不存在时直接写会抛错
+        out.write_text(json.dumps(record, ensure_ascii=False, indent=2), encoding="utf-8")
+        print(f"trace 已写入 {out}（可用 cost_report 汇总）")
     return 0
 
 

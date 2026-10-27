@@ -1,0 +1,57 @@
+{
+  "scene": "华生说他今晚还想再去现场守一夜，让福尔摩斯把已知的线索讲一遍。",
+  "models": {
+    "generate": "deepseek-chat",
+    "judge": "qwen3.8-flash"
+  },
+  "attempt": 2,
+  "final_score": 2,
+  "needs_human": false,
+  "total_ms": 91144,
+  "nodes": [
+    {
+      "node": "generate",
+      "attempt": 1,
+      "chars": 1248,
+      "ms": 4109,
+      "prompt_chars": 1375
+    },
+    {
+      "node": "verify",
+      "attempt": 1,
+      "score": 1,
+      "hits": 2,
+      "failed_traits": 0,
+      "ms": 43037,
+      "prompt_chars": 24634,
+      "reply_chars": 1228
+    },
+    {
+      "node": "rewrite",
+      "notes": 2,
+      "next_attempt": 2
+    },
+    {
+      "node": "generate",
+      "attempt": 2,
+      "chars": 730,
+      "ms": 2518,
+      "prompt_chars": 1683
+    },
+    {
+      "node": "verify",
+      "attempt": 2,
+      "score": 2,
+      "hits": 0,
+      "failed_traits": 0,
+      "ms": 41236,
+      "prompt_chars": 20490,
+      "reply_chars": 731
+    },
+    {
+      "node": "finalize",
+      "score": 2,
+      "attempt": 2
+    }
+  ]
+}

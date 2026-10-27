@@ -46,8 +46,14 @@ class TraitEvaluator:
         self._consecutive_failures = 0
 
     def judge_trait(self, candidate: str, trait: dict[str, Any]) -> dict[str, Any]:
-        """判一条 trait：取证（模型）→ 解析 → 引文校验。"""
-        raw = self._model.complete(self._prompts.build(candidate, trait))
+        """判一条 trait：取证（模型）→ 解析 → 引文校验。
+
+        顺带记录 prompt / 回复的字符数 —— 成本表要靠它，而 tokens 只能估算，
+        字符数是实测的，把实测值留全，估算才有据可依。
+        """
+        messages = self._prompts.build(candidate, trait)
+        prompt_chars = sum(len(str(m.get("content", ""))) for m in messages)
+        raw = self._model.complete(messages)
         parsed = self._parser.parse(raw)
         passed, rejected = self._validator.validate(parsed["hits"], candidate)
         return {
@@ -57,6 +63,8 @@ class TraitEvaluator:
             "invalid": rejected,
             "ambiguity": parsed["ambiguity"],
             "parse_error": parsed["parse_error"],
+            "prompt_chars": prompt_chars,
+            "reply_chars": len(raw),
         }
 
     def judge_case(

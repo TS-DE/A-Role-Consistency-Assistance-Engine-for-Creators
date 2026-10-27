@@ -6,6 +6,7 @@
 
 | 版本 | 日期 | 主题 | 关键产物 |
 | --- | --- | --- | --- |
+| v0.6.0 | 2026-10-27 | 成本/延迟汇总 + 结构自查 | `cost_report`（实测延迟 + 估算 tokens/成本）、trace 落盘、`docs/12` 合规自查与三批整改计划 |
 | v0.5.1 | 2026-10-27 | MCP 能力外置 | 三个 MCP 工具、stdio server、`--selftest`、8 个用例、`docs/11` 接入指南 |
 | v0.5.0 | 2026-10-27 | 生成质量评估 | `docs/10` 评分方案、可填打分表 CSV、汇总脚本（均分/可用率/硬伤率/改写增益/同向性）、6 个用例 |
 | v0.4.3 | 2026-10-27 | 闭环文档 | `docs/09`：状态契约、时序实测、四条路由理由、五个坑、答辩骨架 |
@@ -21,6 +22,68 @@
 | v0.2.1 | 2026-10-27 | 判定器模块化重构 + 运行时保护 | 10 个模块分层、`ChatModel` ABC、preflight、逐 trait 进度、失败熔断、离线单测 |
 | v0.2.0 | 2026-10-26 | 判定器跨 trait 评测 + 首次留出集盲跑 | `--fanout`、区间去重聚合、`--cases`、留出集 E01–E08、GBK 崩栈修复 |
 | v0.1.0 | 2026-10-26 | 初始项目导入与版本化 | 一致性规格书、黄金测试集、人设卡、评测脚本与对比报告 |
+
+---
+
+## v0.6.0 · 2026-10-27 · 成本/延迟汇总 + 结构自查
+
+### 1. 原有缺陷
+
+- **没有成本与延迟的数字**：`trace` 只在终端打印，跑完即失，无法汇总；
+  答辩被问"跑一次多少钱、多少秒"只能凭记忆。
+- **无法归因**：只有节点总耗时，没有 prompt / 回复的字符数，连量级都估不出。
+- **结构合规未自查**：`tests/` 根有 6 个裸文件、`tools/` 有 1 个、`src/cli` 6 个入口未归档，
+  违反《通用约束提示词》第二节的目录规则，且一直没有一份可核对的清单。
+
+### 2. 改进技术
+
+- `GenerateNode` / `VerifyNode` 的 trace 增加 `prompt_chars`、`reply_chars`（实测字符数）。
+- `run_graph --json-out` 落盘本次 trace（`reports/traces/*.json`），并补上目录自动创建。
+- 新增 `src/cli/cost_report.py`：读 trace 目录出表——
+  **延迟实测**（均值/中位/p95、节点耗时占比），**tokens 与成本是估算**
+  （字符数 ÷ `--chars-per-token`，价格由 `--judge-price` / `--gen-price` 传入）。
+  估算口径写死在命令行参数里，不藏魔法数字。
+- 节点占比的分母改用"节点耗时之和"而非"运行总耗时"：总耗时含图调度开销，
+  用它做分母会让占比加起来不到 100%，读者会以为漏算。
+- 新增 `docs/12-结构合规自查.md`：逐条对照九项规则、五项违规按风险排序、
+  三批整改计划（A 路径常量 / B CLI 归档 / C judge 分包），并点明批次 C 里
+  `PROJECT_ROOT = parents[2] → parents[3]` 是唯一会静默失败的改动。
+
+### 3. 对应代码位置
+
+- `src/cli/cost_report.py`：`load_records()` / `summarise()` / `print_report()`
+- `src/cli/run_graph.py`：`--json-out`、`_build_record()`、目录自动创建
+- `src/graph/nodes/generate.py` / `verify.py`：trace 增加字符数字段
+- `src/judge/evaluator.py`：`judge_trait()` 记录 `prompt_chars` / `reply_chars`
+- `tests/cli/test_cost_report.py`（新增，6 个用例）
+- `docs/12-结构合规自查.md`（新增）
+
+### 4. 验证流程
+
+```bash
+python -m tests.cli.test_cost_report
+python -m src.cli.run_graph --json-out reports/traces/run01.json
+python -m src.cli.cost_report
+```
+
+实测结果（一次真实两稿闭环）：
+
+```
+运行次数 1　平均稿数 2.00　转人工 0/1
+总耗时（实测）均值 91.1s
+verify 2 次 84.3s 92.7%　generate 2 次 6.6s 7.3%
+估算 tokens：判定 输入 15041 / 输出 653；生成 输入 1019 / 输出 659
+估算成本：单次 0.0161 元
+```
+
+- `test_cost_report` 6/6：空数据、耗时分布与节点占比之和为 1、判定/生成 tokens 分开折算、
+  双价格成本、p95 线性插值、稿数与转人工计数。
+- 全量离线用例：judge 22 + graph 19 + gen 6 + mcp 8 + cli 6 = **61/61 通过**。
+
+### 5. 未完成（见 docs/12 第三节）
+
+结构整改批次 A / B / C **未在本次执行**。理由：本轮已改 6 个文件并新增一个功能，
+而结构重构要动约 40 处 import 与 5 处路径常量，必须留独立验证预算，否则回归无法归因。
 
 ---
 

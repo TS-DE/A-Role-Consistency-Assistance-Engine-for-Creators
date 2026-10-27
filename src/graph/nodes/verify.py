@@ -74,6 +74,8 @@ class VerifyNode:
                 "hits": len(violated),
                 "failed_traits": len(failed),
                 "ms": elapsed_ms,
+                "prompt_chars": sum(int(r.get("prompt_chars", 0)) for r in results),
+                "reply_chars": sum(int(r.get("reply_chars", 0)) for r in results),
             },
         )
 
