@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from src.cli.cost_report import summarise
+from src.cli.eval.cost_report import summarise
 
 
 def _record(total_ms: int, nodes: list[dict], attempt: int = 1) -> dict:

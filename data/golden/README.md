@@ -19,7 +19,7 @@
 python -m tests.scripts.validate_golden     # 结构校验
 python -m tests.scripts.compare_rounds      # 多方一致率与 κ
 python -m tests.scripts.audit_leakage data/characters/sherlock.judge.yaml
-python -m src.cli.run_judge --fanout --cases data/golden/golden_holdout.json
+python -m src.cli.eval.run_judge --fanout --cases data/golden/golden_holdout.json
 ```
 
 ## 修改纪律

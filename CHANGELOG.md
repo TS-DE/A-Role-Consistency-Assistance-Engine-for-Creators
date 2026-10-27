@@ -6,6 +6,7 @@
 
 | 版本 | 日期 | 主题 | 关键产物 |
 | --- | --- | --- | --- |
+| v0.6.2 | 2026-10-27 | 结构整改批次 B | `src/cli/` 拆 `eval/`（离线评测）与 `serve/`（运行时入口），文档与测试 import 同步 |
 | v0.6.1 | 2026-10-27 | 结构整改批次 A | 数据迁至 `data/golden/`、运维脚本迁至 `tests/scripts/`、`tools/` 并入 `src/cli/tools/`、12 个文档路径同步 |
 | v0.6.0 | 2026-10-27 | 成本/延迟汇总 + 结构自查 | `cost_report`（实测延迟 + 估算 tokens/成本）、trace 落盘、`docs/12` 合规自查与三批整改计划 |
 | v0.5.1 | 2026-10-27 | MCP 能力外置 | 三个 MCP 工具、stdio server、`--selftest`、8 个用例、`docs/11` 接入指南 |
@@ -23,6 +24,45 @@
 | v0.2.1 | 2026-10-27 | 判定器模块化重构 + 运行时保护 | 10 个模块分层、`ChatModel` ABC、preflight、逐 trait 进度、失败熔断、离线单测 |
 | v0.2.0 | 2026-10-26 | 判定器跨 trait 评测 + 首次留出集盲跑 | `--fanout`、区间去重聚合、`--cases`、留出集 E01–E08、GBK 崩栈修复 |
 | v0.1.0 | 2026-10-26 | 初始项目导入与版本化 | 一致性规格书、黄金测试集、人设卡、评测脚本与对比报告 |
+
+---
+
+## v0.6.2 · 2026-10-27 · 结构整改批次 B
+
+### 1. 原有缺陷
+
+- `src/cli/` 下 6 个入口脚本混在一起（同类 ≥3 未归档），职责分不清：
+  哪些是"跑一次真模型"的运行时入口，哪些是"算指标"的离线脚本，光看文件名看不出来。
+
+### 2. 改进技术
+
+- 拆成两个子包：
+  - `src/cli/eval/`：`run_judge`、`score_generation`、`cost_report` —— **不参与线上流程**，只回答准、贵、快。
+  - `src/cli/serve/`：`run_graph`、`smoke_loop`、`check_observability` —— **真调模型**的运行时入口。
+  - `src/cli/tools/`：`build_judge_yaml` 等构建与维护脚本。
+- 三个子包各带 `__init__.py` 写明职责与 `python -m` 跑法；`src/cli/` 根只剩 `__init__.py`。
+- 批次 C（`src/judge` 分包）按作者决定暂缓，理由与代价写入 `docs/12`。
+
+### 3. 对应代码位置
+
+- `src/cli/eval/{__init__,run_judge,score_generation,cost_report}.py`
+- `src/cli/serve/{__init__,run_graph,smoke_loop,check_observability}.py`
+- `tests/cli/test_cost_report.py`：import 改为 `src.cli.eval.cost_report`
+- 6 个文档的命令路径同步；`docs/12` 记录批次 B 结果与 C 的暂缓理由
+
+### 4. 验证流程
+
+迁移后逐个真跑入口（路径类改动唯一可靠的验证方式）：
+
+```bash
+python -m src.cli.eval.cost_report                    # 出表正常
+python -m src.cli.eval.run_judge --limit 1 --dry      # 提示词正常构造
+python -m src.cli.serve.check_observability           # 自检正常
+python -c "import src.cli.serve.run_graph, src.cli.serve.smoke_loop, src.cli.eval.score_generation, src.cli.tools.build_judge_yaml"
+```
+
+- 全部离线用例：**61/61 通过**（judge 22 + graph 19 + gen 6 + mcp 8 + cli 6）。
+- `src/cli/` 目录：根 1 个文件、eval 4 个、serve 4 个、tools 2 个，均符合归档规则。
 
 ---
 
@@ -62,7 +102,7 @@ python -m tests.scripts.validate_golden            # 结构校验通过
 python -m tests.scripts.compare_rounds             # 24/31 = 77.4%（与迁移前一致）
 python -m tests.scripts.audit_leakage data/characters/sherlock.judge.yaml
 python -m src.cli.tools.build_judge_yaml           # 重建 10788 字符
-python -m src.cli.run_judge --cases data/golden/golden_holdout_f.json --limit 1 --dry
+python -m src.cli.eval.run_judge --cases data/golden/golden_holdout_f.json --limit 1 --dry
 ```
 
 - 全部离线用例：**61/61 通过**（judge 22 + graph 19 + gen 6 + mcp 8 + cli 6）。
@@ -108,8 +148,8 @@ python -m src.cli.run_judge --cases data/golden/golden_holdout_f.json --limit 1 
 
 ```bash
 python -m tests.cli.test_cost_report
-python -m src.cli.run_graph --json-out reports/traces/run01.json
-python -m src.cli.cost_report
+python -m src.cli.serve.run_graph --json-out reports/traces/run01.json
+python -m src.cli.eval.cost_report
 ```
 
 实测结果（一次真实两稿闭环）：
@@ -207,7 +247,7 @@ python -m src.mcp_server.server --selftest
 
 ```bash
 python -m tests.gen.test_score_generation
-python -m src.cli.score_generation
+python -m src.cli.eval.score_generation
 ```
 
 实测结果：
@@ -282,7 +322,7 @@ python -m src.cli.score_generation
 
 ```bash
 python -m tests.judge.test_langchain_model
-python -m src.cli.check_observability
+python -m src.cli.serve.check_observability
 ```
 
 实测结果：
@@ -327,7 +367,7 @@ python -m src.cli.check_observability
 
 ```bash
 python -m tests.graph.test_builder
-python -m src.cli.run_graph
+python -m src.cli.serve.run_graph
 ```
 
 实测结果：
@@ -381,7 +421,7 @@ python -m src.cli.run_graph
 
 ```bash
 python -m tests.graph.test_builder
-python -m src.cli.run_graph
+python -m src.cli.serve.run_graph
 ```
 
 实测结果：
@@ -423,7 +463,7 @@ python -m src.cli.run_graph
 
 ```bash
 python -m tests.graph.test_routing
-python -m src.cli.smoke_loop
+python -m src.cli.serve.smoke_loop
 ```
 
 实测结果：
@@ -505,7 +545,7 @@ python -m tests.judge.test_aggregator; python -m tests.judge.test_quote_validato
 
 - `test_generate` 4/4 通过；判定域 18 个用例无回归，**合计 22/22**。
 - 行数：`state.py` 49 行、`generate.py` 58 行，均远低于 300 行上限。
-- 冒烟：`python -m src.cli.run_judge --cases data/golden/golden_holdout_f.json --limit 1`
+- 冒烟：`python -m src.cli.eval.run_judge --cases data/golden/golden_holdout_f.json --limit 1`
   在新模型 `qwen3.8-max-0902` 上连通正常、判定 1/1。
 
 ---
@@ -539,7 +579,7 @@ python -m tests.judge.test_aggregator; python -m tests.judge.test_quote_validato
 ### 4. 验证流程
 
 ```bash
-python -m src.cli.run_judge --fanout --cases data/golden/golden_holdout_f.json --json-out reports/holdout_F_run_01.json
+python -m src.cli.eval.run_judge --fanout --cases data/golden/golden_holdout_f.json --json-out reports/holdout_F_run_01.json
 ```
 
 实测结果（qwen3.8-27b，2026-10-27，单次）：
@@ -633,7 +673,7 @@ python -m tests.judge.test_aggregator && python -m tests.judge.test_quote_valida
 python -m tests.judge.test_aggregator        # 7 个用例
 python -m tests.judge.test_quote_validator   # 8 个用例
 python -m tests.judge.test_evaluator         # 3 个用例
-python -m src.cli.run_judge --fanout --cases data/golden/golden_holdout.json --json-out reports/holdout_run_04.json
+python -m src.cli.eval.run_judge --fanout --cases data/golden/golden_holdout.json --json-out reports/holdout_run_04.json
 ```
 
 实测结果：
@@ -685,8 +725,8 @@ python -m src.cli.run_judge --fanout --cases data/golden/golden_holdout.json --j
 ```bash
 python -m tests.judge.test_aggregator        # 期望：7 个用例通过
 python -m tests.judge.test_quote_validator   # 期望：8 个用例通过
-python -m src.cli.run_judge --cases data/golden/golden_holdout.json --limit 1 --dry   # 只打提示词
-python -m src.cli.run_judge --fanout --cases data/golden/golden_holdout.json --json-out reports/holdout_run_03.json
+python -m src.cli.eval.run_judge --cases data/golden/golden_holdout.json --limit 1 --dry   # 只打提示词
+python -m src.cli.eval.run_judge --fanout --cases data/golden/golden_holdout.json --json-out reports/holdout_run_03.json
 ```
 
 实测结果：

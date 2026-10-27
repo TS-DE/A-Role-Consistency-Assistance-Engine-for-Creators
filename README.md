@@ -43,8 +43,8 @@ Python 3.12 / git 已就绪。依赖只有 `pyyaml`，网络走标准库 `urllib
 ```bash
 python -m tests.judge.test_aggregator        # 离线单测，不联网
 python -m tests.judge.test_quote_validator   # 离线单测，不联网
-python -m src.cli.run_judge --limit 1 --dry  # 只看提示词，不发请求
-python -m src.cli.run_judge --fanout --cases data/golden/golden_holdout.json --json-out reports/holdout_run_03.json
+python -m src.cli.eval.run_judge --limit 1 --dry  # 只看提示词，不发请求
+python -m src.cli.eval.run_judge --fanout --cases data/golden/golden_holdout.json --json-out reports/holdout_run_03.json
 ```
 
 > Windows 下命令一律写成**单行**（不支持 bash 的 `\` 续行）。
