@@ -6,6 +6,7 @@
 
 | 版本 | 日期 | 主题 | 关键产物 |
 | --- | --- | --- | --- |
+| v0.3.2 | 2026-10-27 | 闭环跑通（手写串联） | `routing.decide` 纯函数路由、`smoke_loop` 手写闭环、判定耗时暴露 |
 | v0.3.1 | 2026-10-27 | 校验节点接入闭环 | `VerifyNode` 全轴判定、未完成不许当通过、5 个离线用例 |
 | v0.3.0 | 2026-10-27 | 闭环起步：状态契约 + 生成节点 | `GraphState`、`GenerateNode`、违规清单回灌、4 个离线用例 |
 | v0.2.4 | 2026-10-27 | F 集成绩归档并退役 | **可报数字：17 条未见样本 94.1%**、F07-b 暴露规格自相矛盾、Windows 单行命令、换后端成本方案 |
@@ -14,6 +15,46 @@
 | v0.2.1 | 2026-10-27 | 判定器模块化重构 + 运行时保护 | 10 个模块分层、`ChatModel` ABC、preflight、逐 trait 进度、失败熔断、离线单测 |
 | v0.2.0 | 2026-10-26 | 判定器跨 trait 评测 + 首次留出集盲跑 | `--fanout`、区间去重聚合、`--cases`、留出集 E01–E08、GBK 崩栈修复 |
 | v0.1.0 | 2026-10-26 | 初始项目导入与版本化 | 一致性规格书、黄金测试集、人设卡、评测脚本与对比报告 |
+
+---
+
+## v0.3.2 · 2026-10-27 · 闭环跑通（手写串联）
+
+### 1. 原有缺陷
+
+- 生成与校验两个节点虽有，但没有任何东西把它们连起来，也没有"打回后往哪走"的判断。
+- 路由规则只存在于对话里，没有落到代码：score=1 是否打回、未完成怎么办，全靠记忆。
+
+### 2. 改进技术
+
+- 新增 `src/graph/routing.py`：`decide()` 纯函数，把三条产品决定固化为代码——
+  `2→出口`、`0/1→打回`、`打回满 3 次→人工`、`verify_incomplete→立刻人工不重试`。
+  `explain()` 输出人类可读理由，避免路由变黑盒。
+- 新增 `src/cli/smoke_loop.py`：不依赖 langgraph 的手写闭环，先跑通再看框架。
+  生成侧读 `LLM_*`、判定侧读 `JUDGE_*`，两种模型可分开配置。
+- `constants.py` 补 `MAX_REWRITE_ATTEMPTS` 与 `INCOMPLETE_SCORE`（原先只在 `.env` 里，代码读不到）。
+
+### 3. 对应代码位置
+
+- `src/graph/routing.py`：`decide()` / `explain()`
+- `src/cli/smoke_loop.py`：`main()` 主循环、`_build_generator()` / `_build_judge()`
+- `src/judge/constants.py`：`MAX_REWRITE_ATTEMPTS`、`INCOMPLETE_SCORE`
+- `tests/graph/test_routing.py`（新增，7 个用例）
+
+### 4. 验证流程
+
+```bash
+python -m tests.graph.test_routing
+python -m src.cli.smoke_loop
+```
+
+实测结果：
+
+- 离线用例：routing 7/7，合计 **34/34** 通过。
+- 真实闭环：1 稿通过（`score=2`、证据 0 条），trace 两条（generate 1598 字符 / verify）。
+- **单轮耗时 213.7 秒**：生成 1 次（deepseek-chat）+ 判定 8 次（qwen3.8-max-0902，约 25s/次）。
+  这说明判定侧用 MAX 时，一次冒烟要 3.5 分钟、三稿要 10 分钟 —— 迭代速度不可接受，
+  正式结论：判定器换 `qwen3.8-flash`。
 
 ---
 

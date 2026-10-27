@@ -32,3 +32,7 @@ PREFLIGHT_PROMPT = "reply with the single word OK"
 # ── 文本处理 ────────────────────────────────────────────────
 SENTENCE_ENDS = ".!?"
 QUOTE_ELLIPSIS = r"\s*(?:\.\.\.+|…)\s*"
+
+# ── 闭环 ────────────────────────────────────────────────────
+MAX_REWRITE_ATTEMPTS = 3      # 最多生成几稿；超过仍 <2 分则转人工（见 graph/routing.py）
+INCOMPLETE_SCORE = -1         # 校验未完成时的分数占位，绝不会被当成"通过"
