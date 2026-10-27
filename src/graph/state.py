@@ -31,6 +31,7 @@ class GraphState(TypedDict, total=False):
 
     # ── 出口 ────────────────────────────────────────────
     final: str               # 最终交给创作者的文本
+    needs_human: bool        # 走到人工裁决分支（打回用尽 / 校验未完成）
     trace: list[dict]        # 全链路日志：每轮草稿、判定、耗时、成本
 
 
@@ -48,6 +49,7 @@ def new_state(user_input: str, character_id: str = "sherlock_holmes") -> GraphSt
         violated=[],
         verify_incomplete=False,
         final="",
+        needs_human=False,
         trace=[],
     )
 

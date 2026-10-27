@@ -6,6 +6,7 @@
 
 | 版本 | 日期 | 主题 | 关键产物 |
 | --- | --- | --- | --- |
+| v0.4.0 | 2026-10-27 | LangGraph 状态图闭环 + 判定并发 | 5 节点图、`finalize` 修复、判定并发 155s→30–58s、模型工厂收口、`.env` 编码回退 |
 | v0.3.2 | 2026-10-27 | 闭环跑通（手写串联） | `routing.decide` 纯函数路由、`smoke_loop` 手写闭环、判定耗时暴露 |
 | v0.3.1 | 2026-10-27 | 校验节点接入闭环 | `VerifyNode` 全轴判定、未完成不许当通过、5 个离线用例 |
 | v0.3.0 | 2026-10-27 | 闭环起步：状态契约 + 生成节点 | `GraphState`、`GenerateNode`、违规清单回灌、4 个离线用例 |
@@ -15,6 +16,61 @@
 | v0.2.1 | 2026-10-27 | 判定器模块化重构 + 运行时保护 | 10 个模块分层、`ChatModel` ABC、preflight、逐 trait 进度、失败熔断、离线单测 |
 | v0.2.0 | 2026-10-26 | 判定器跨 trait 评测 + 首次留出集盲跑 | `--fanout`、区间去重聚合、`--cases`、留出集 E01–E08、GBK 崩栈修复 |
 | v0.1.0 | 2026-10-26 | 初始项目导入与版本化 | 一致性规格书、黄金测试集、人设卡、评测脚本与对比报告 |
+
+---
+
+## v0.4.0 · 2026-10-27 · LangGraph 状态图闭环 + 判定并发
+
+### 1. 原有缺陷
+
+- **没有状态图**：闭环只有手写 `while`，LangGraph 未接入，`interrupt` / Checkpointer 无从谈起。
+- **`final` 是空字符串**（第一次真实运行暴露）：`pass` 分支直接连 `END`，而条件边不能写数据，
+  没有任何节点负责把 `draft` 封成 `final`，CLI 拿到的最终文本为空。
+- **判定串行，慢到无法迭代**：8 条 trait 顺序调用，单轮 verify 155s；一次三稿冒烟要 8 分钟。
+- **`.env` 编码崩**：用 PowerShell `Set-Content` 改写后文件变成 GBK，`EnvLoader` 硬编码
+  `utf-8` 直接抛 `UnicodeDecodeError`，报错位置看起来与"读配置"无关。
+- **模型构造散落在 CLI**：`smoke_loop` 自己拼 `LLM_*` / `JUDGE_*`，再写一个入口就得复制一遍。
+
+### 2. 改进技术
+
+- `src/graph/builder.py`：5 节点图 `generate → verify → {finalize | rewrite → generate | human}`，
+  条件边只调 `routing.decide()`，图本身不含任何判断逻辑。
+- 新增 `finalize` 节点：把最后一稿封成 `final`。**边只决定去哪，不能写数据** —— 这是 LangGraph
+  逼你想清楚数据流的地方，也是这次踩坑的根源。
+- 判定并发：`ThreadPoolExecutor(MAX_JUDGE_WORKERS=4)`，8 条 trait 本质独立，串行是纯浪费。
+  实测单轮 verify 155s → **58s**（首轮）/ **30s**（次轮）。
+- `trace` 记录每节点 `ms`：数据表明生成仅 3–4s，判定占 95%，此前的"生成慢"判断是错的。
+- `EnvLoader._read()` 按 `utf-8-sig → utf-8 → gbk` 回退，Windows 工具改写 `.env` 不再崩。
+- 模型工厂收口到 `chat_model.build_generator_model()` / `build_judge_model()`，CLI 不再拼 env。
+- `langgraph` 经 pip 镜像装入 `E:\Anaconda_download\envs\py312_env`（conda 源 `repo.anaconda.com` 不通）。
+
+### 3. 对应代码位置
+
+- `src/graph/builder.py`：`build_graph()`、`rewrite_node()`、`finalize_node()`、`human_node()`
+- `src/cli/run_graph.py`：状态图入口（新增）
+- `src/judge/evaluator.py`：`judge_case()` 分批 + `_run_batch()` 并发
+- `src/judge/chat_model.py`：`build_generator_model()` / `build_judge_model()`
+- `src/judge/env_loader.py`：`_read()` 编码回退
+- `src/judge/constants.py`：`MAX_JUDGE_WORKERS`
+- `src/graph/state.py`：新增 `needs_human`
+- `tests/graph/test_builder.py`（新增，3 个用例，含"持续 drift 三轮后转人工"）
+
+### 4. 验证流程
+
+```bash
+python -m tests.graph.test_builder
+python -m src.cli.run_graph
+```
+
+实测结果：
+
+- 离线用例：judge 18 + graph 16 = **37/37 通过**。
+- 真实闭环（生成 deepseek-chat / 判定 qwen3.8-flash）：
+  ```
+  generate a1 4072ms → verify a1 score=1 hits=1 58377ms → rewrite
+  generate a2 3320ms → verify a2 score=2 hits=0 30755ms → finalize
+  ```
+  **首次出现"打回一次再通过"的完整闭环**，两稿总耗时约 97s。
 
 ---
 

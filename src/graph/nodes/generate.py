@@ -18,6 +18,7 @@
 
 from __future__ import annotations
 
+import time
 from typing import Any
 
 from src.graph.state import GraphState, trace_entry
@@ -47,7 +48,9 @@ class GenerateNode:
     def __call__(self, state: GraphState) -> dict[str, Any]:
         """LangGraph 节点契约：接收整个 State，返回要合并进去的那部分字段。"""
         messages = self._build_messages(state)
+        started = time.perf_counter()
         draft = self._model.complete(messages).strip().strip('"').strip()
+        elapsed_ms = int((time.perf_counter() - started) * 1000)
 
         attempt = int(state.get("attempt", 0)) + 1
         return {
@@ -56,7 +59,7 @@ class GenerateNode:
             # 违规清单已经被用掉了，清空避免下一轮重复回灌
             "rewrite_notes": [],
             "trace": list(state.get("trace", [])) + [
-                trace_entry("generate", {"attempt": attempt, "chars": len(draft)})
+                trace_entry("generate", {"attempt": attempt, "chars": len(draft), "ms": elapsed_ms})
             ],
         }
 

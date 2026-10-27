@@ -19,6 +19,7 @@
 
 from __future__ import annotations
 
+import time
 from typing import Any, Callable
 
 from src.graph.state import GraphState, summarize_hits, trace_entry
@@ -55,9 +56,11 @@ class VerifyNode:
 
         # judge_case 只需要 text；fanout=True 时不会去读 cand["trait"]
         candidate = {"id": f"draft-a{state.get('attempt', 0)}", "text": draft}
+        started = time.perf_counter()
         aggregate, results, failed = self._evaluator.judge_case(
             candidate, self._traits, fanout=True
         )
+        elapsed_ms = int((time.perf_counter() - started) * 1000)
 
         violated = summarize_hits(results)
         # TODO(你)：现在的 violated 把"pattern + 原句"都塞回去给生成节点。
@@ -70,6 +73,7 @@ class VerifyNode:
                 "score": aggregate["score"],
                 "hits": len(violated),
                 "failed_traits": len(failed),
+                "ms": elapsed_ms,
             },
         )
 

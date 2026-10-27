@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Callable
 
 from src.judge.aggregator import ScoreAggregator
@@ -12,6 +13,7 @@ from src.judge.constants import (
     BACKOFF_CAP,
     CALL_GAP,
     MAX_CONSECUTIVE_FAILURES,
+    MAX_JUDGE_WORKERS,
     MISSING_RETRIES,
 )
 from src.judge.hit_parser import HitParser
@@ -67,8 +69,8 @@ class TraitEvaluator:
     ) -> tuple[dict[str, Any], list[dict], list[str]]:
         """判一条候选。返回 (聚合结果, 每 trait 明细, 失败列表)。
 
-        失败列表要交给上层标记 incomplete：缺 trait 的 soft 计数可能恰好等于 gold，那是假通过。
-        补跑只重试失败的那几条，不重跑已成功的 —— 否则一次抖动就要多花 8 次调用。
+        8 条 trait 彼此独立，所以并发跑：实测串行 155s / 轮，并发后降到 40s 量级。
+        分页与重试逻辑不变，只有"怎么发"变了。
         """
         trait_ids = list(traits) if fanout else [cand["trait"]]
         results: list[dict] = []
@@ -78,24 +80,25 @@ class TraitEvaluator:
         for attempt in range(max(0, missing_retries) + 1):
             if attempt:
                 time.sleep(min(BACKOFF_CAP, BACKOFF_BASE * (2 ** attempt)))
+            batch = self._run_batch(cand["text"], traits, pending)
+
             still_failed: list[str] = []
-            for trait_id in pending:
-                try:
-                    results.append(self.judge_trait(cand["text"], traits[trait_id]))
-                    self._consecutive_failures = 0
-                    failures.pop(trait_id, None)
-                    self._emit(cand["id"], trait_id, True, "")
-                except Exception as exc:  # noqa: BLE001
+            for trait_id, outcome in batch:
+                if isinstance(outcome, Exception):
                     still_failed.append(trait_id)
-                    failures[trait_id] = str(exc)
+                    failures[trait_id] = str(outcome)
                     self._consecutive_failures += 1
-                    self._emit(cand["id"], trait_id, False, str(exc))
-                    if self._consecutive_failures >= MAX_CONSECUTIVE_FAILURES:
-                        raise JudgeAborted(
-                            f"连续 {self._consecutive_failures} 次调用失败，判定网络不可用：{exc}"
-                        ) from exc
-                if CALL_GAP:
-                    time.sleep(CALL_GAP)   # 8 连发容易撞限流，留一点间隔
+                    self._emit(cand["id"], trait_id, False, str(outcome))
+                else:
+                    results.append(outcome)
+                    failures.pop(trait_id, None)
+                    self._consecutive_failures = 0
+                    self._emit(cand["id"], trait_id, True, "")
+
+            if self._consecutive_failures >= MAX_CONSECUTIVE_FAILURES:
+                raise JudgeAborted(
+                    f"连续 {self._consecutive_failures} 次调用失败，判定网络不可用"
+                )
             pending = still_failed
             if not pending:
                 break
@@ -105,6 +108,36 @@ class TraitEvaluator:
             results,
             [f"{trait}: {msg}" for trait, msg in failures.items()],
         )
+
+    def _run_batch(
+        self, text: str, traits: dict[str, Any], trait_ids: list[str]
+    ) -> list[tuple[str, Any]]:
+        """跑一批 trait，返回 [(trait_id, 结果或异常)]，顺序与入参一致。"""
+        if len(trait_ids) <= 1 or MAX_JUDGE_WORKERS <= 1:
+            outcomes: list[tuple[str, Any]] = []
+            for trait_id in trait_ids:
+                try:
+                    outcomes.append((trait_id, self.judge_trait(text, traits[trait_id])))
+                except Exception as exc:  # noqa: BLE001
+                    outcomes.append((trait_id, exc))
+                if CALL_GAP:
+                    time.sleep(CALL_GAP)
+            return outcomes
+
+        collected: dict[str, Any] = {}
+        workers = min(MAX_JUDGE_WORKERS, len(trait_ids))
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            futures = {
+                pool.submit(self.judge_trait, text, traits[trait_id]): trait_id
+                for trait_id in trait_ids
+            }
+            for future in as_completed(futures):
+                trait_id = futures[future]
+                try:
+                    collected[trait_id] = future.result()
+                except Exception as exc:  # noqa: BLE001
+                    collected[trait_id] = exc
+        return [(trait_id, collected[trait_id]) for trait_id in trait_ids]
 
     def _emit(self, cand_id: str, trait_id: str, ok: bool, message: str) -> None:
         if self._on_progress is not None:

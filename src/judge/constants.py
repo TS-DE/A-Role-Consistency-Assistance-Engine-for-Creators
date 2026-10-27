@@ -25,6 +25,7 @@ DEFAULT_RETRIES = 2           # 首次之外的重试次数（超时 60s 时不�
 BACKOFF_BASE = 3.0            # 指数退避基数：3 → 6 → 12，给限流窗口足够时间合上
 BACKOFF_CAP = 20.0
 CALL_GAP = 0.6                # 每次调用之间的间隔，避免 8 连发触发服务端限流
+MAX_JUDGE_WORKERS = 4         # 判定并发数：8 条 trait 互相独立，串行是纯浪费
 MISSING_RETRIES = 2           # 某条 trait 失败后补跑几轮（补跑只针对失败的那几条）
 MAX_CONSECUTIVE_FAILURES = 8  # 连续失败到这条数就判定网络瘫了，立即中止
 PREFLIGHT_PROMPT = "reply with the single word OK"

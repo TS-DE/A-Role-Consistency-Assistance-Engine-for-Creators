@@ -113,3 +113,28 @@ class OpenAICompatChatModel(ChatModel):
         with urllib.request.urlopen(request, timeout=self._timeout) as response:
             body = json.loads(response.read().decode("utf-8"))
         return body["choices"][0]["message"]["content"]
+
+
+# ── 工厂：模型构造只在这一个文件里，CLI 不许自己拼 env ──────────
+def build_generator_model() -> ChatModel:
+    """生成侧：优先 LLM_*（写台词用文笔更好的模型）。"""
+    model = EnvLoader.get("LLM_MODEL", "JUDGE_MODEL")
+    if not model:
+        raise ChatModelError("未配置 LLM_MODEL / JUDGE_MODEL")
+    return OpenAICompatChatModel(
+        model,
+        base_url=EnvLoader.get("LLM_BASE_URL", "JUDGE_BASE_URL"),
+        api_key=EnvLoader.get("LLM_API_KEY", "JUDGE_API_KEY"),
+    )
+
+
+def build_judge_model() -> ChatModel:
+    """判定侧：优先 JUDGE_*（判定用便宜、够稳、够快的模型）。"""
+    model = EnvLoader.get("JUDGE_MODEL", "LLM_MODEL")
+    if not model:
+        raise ChatModelError("未配置 JUDGE_MODEL / LLM_MODEL")
+    return OpenAICompatChatModel(
+        model,
+        base_url=EnvLoader.get("JUDGE_BASE_URL", "LLM_BASE_URL"),
+        api_key=EnvLoader.get("JUDGE_API_KEY", "LLM_API_KEY"),
+    )
