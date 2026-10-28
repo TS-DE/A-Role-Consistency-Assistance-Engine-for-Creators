@@ -6,6 +6,7 @@
 
 | 版本 | 日期 | 主题 | 关键产物 |
 | --- | --- | --- | --- |
+| v0.7.1 | 2026-10-28 | watson_rapport 划界修订（修 F07-b 漏杀 + 守夜误杀） | spec 0.4：调侃/否定界 + 健康界两条可判定分界；两轮 E 回归终验 16/17（flash）；docs/01 四·补三、docs/07 §八 |
 | v0.7.0 | 2026-10-27 | 演示界面（Streamlit） | `src/web/app.py` 双页签：创作台（含真 HITL 交互与实测时间线）、指标看板（读真实结果文件） |
 | v0.6.2 | 2026-10-27 | 结构整改批次 B | `src/cli/` 拆 `eval/`（离线评测）与 `serve/`（运行时入口），文档与测试 import 同步 |
 | v0.6.1 | 2026-10-27 | 结构整改批次 A | 数据迁至 `data/golden/`、运维脚本迁至 `tests/scripts/`、`tools/` 并入 `src/cli/tools/`、12 个文档路径同步 |
@@ -27,6 +28,62 @@
 | v0.1.0 | 2026-10-26 | 初始项目导入与版本化 | 一致性规格书、黄金测试集、人设卡、评测脚本与对比报告 |
 
 ---
+
+## v0.7.1 · 2026-10-28 · watson_rapport 划界修订
+
+### 1. 原有缺陷
+
+- **规则自相矛盾（F 留出集唯一漏杀的根因）**：`watson_rapport` rule(2)(5) 允许"调侃观察力、判断力"，
+  anti(2) 又禁止"否定判断力"，两者之间没划界。F07-b（"The meaning is beyond you"，gold 1）被判 2，
+  判定器的理由原话："规则允许调侃华生的观察力与判断力，且未否定其参与办案，因此不报命中"
+  （`reports/holdout_F_run_01.json`）。这不是判定器执行错，是规格内部不自洽（docs/07 §六 已记录）。
+- **健康断言过宽（守夜场景三轮误杀）**：rule(6) "关心句里不得夹带对身体的负面断言"把
+  "你咳嗽，别去"这类**原作常态**（症状事实 + 保护建议）也判成 drift（交接文档 §7.3 已知问题）。
+- **缺口记录**：docs/07 另记"当差使唤（Fetch my coat）无规则覆盖"，判据不明。
+
+### 2. 改进技术
+
+给 watson_rapport 划出**两条可判定的分界线**（spec_version 0.1 → 0.4；条目编号保持不变，
+E06 canon_note / docs/01 等外部引用安全）：
+
+- **调侃/否定界**：调侃是否把对方**留在"我们·搭档"框架内**。指"这一次"的疏漏＝合规
+  （"You see, but you do not observe"）；宣布对方**永久性**不行、无用、只配单一功能＝能力否定，命中
+  （rule(2)(3) + anti(2) 重写）。
+- **健康界**：症状/风险的**事实陈述 + 命令式关心**放行（修守夜误杀）；"你不行/撑不住"式**能力判词**、
+  **宿命预言**、**以身体状况对人归类排除**（"你这种身子骨的人去不了"式）才违规（rule(5)(6) + anti(3)）。
+  末式为 E 回归第一轮暴露的缝隙（E06-b 被放行），第二轮前补入。
+- 使唤跑腿按**"非违规"**划出而非补成 anti_pattern：原作风常差遣华生，补成违规会批量误杀。
+- cross_trait_index 第 1 条同步收窄；exemplar note 判据改为"是否留在搭档框架内"。
+- 文档：docs/01 新增四·补三（判据表 + 锚点对照 + 代价），docs/07 新增 §八（修订落地 + G 封存声明）。
+
+### 3. 对应代码位置
+
+- `data/characters/sherlock.yaml`：`meta.spec_version`、`watson_rapport.rule(2)(3)(5)(6)`、
+  `anti_patterns[1][2]`、`exemplars[0].why/note`、`cross_trait_index[0].when`、卡头修订注释
+- `data/characters/sherlock.judge.yaml`：重建产物（不手改）
+- `docs/01-一致性规格书.md`：四·补三；`docs/07-A03泄漏审计.md`：§八
+
+### 4. 验证流程
+
+```bash
+python -m src.cli.tools.build_judge_yaml        # 重建判定输入
+python -m tests.judge.test_* …(11 个模块)        # 全量离线用例
+python -m src.cli.eval.run_judge --fanout --cases data/golden/golden_holdout_g.json --dry \
+       --trait watson_rapport                    # 确认新措辞进入发给模型的 prompt（不花钱）
+python -m src.cli.eval.run_judge --fanout --cases data/golden/golden_holdout.json \
+       --json-out reports/regression_E_after_v0.4_flash.json    # E 回归（README 硬要求）
+```
+
+实测结果（qwen3.8-flash——注意与历史基线 16/17(qwen3.8-27b) 是不同仪器，数字不可并排比较）：
+
+- 11 个离线模块全部 exit=0；判定输入两次重建与 git 无脱节；`--dry` 确认 rule/anti 新措辞原文进 prompt。
+- **第一轮 E 回归 15/17**：五个边界锚点中 E06-b（gold 1）被划界放成 2——rule(6) 宽了，
+  漏掉"以身体状况对人归类排除"式；补入该式后复跑。E06-c 的偏差是 flash 在未改动的
+  `voice_register` 轴上的误伤（把 "We go together" 读成大男主腔），按"不顺手改稳定规则"记录不动。
+- **第二轮 E 回归 16/17 = 94.1%**：E06-a(0)/E06-b(1)/E06-c(2)/E07-a(2)/E07-b(1) **五锚点全过**，
+  唯一失分 E03-a（evidence_first，与本次修订无关的轴；同一规则同一输入第一轮判对、第二轮判错，
+  属已记录的模型复跑不稳，见 `reports/stability_run_01.json`）。被拒引文 0 条。
+- 规则自此**冻结**；G01–G08 依冻结后的 spec 0.4 盲写（尚未跑，只跑一次）。
 
 ## v0.7.0 · 2026-10-27 · 演示界面（Streamlit）
 
