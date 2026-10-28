@@ -27,3 +27,6 @@ SherlockHolmes_ebook/
 # 本地临时
 *.log
 .DS_Store
+
+# AI 助手产出的私有材料（逐字稿、录屏讲稿、流程图、参考资料）：不进仓库
+agent_docs/
