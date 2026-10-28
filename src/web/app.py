@@ -226,6 +226,17 @@ def _render_human(payload: dict) -> None:
 
 
 # ── 指标看板：只读真实结果文件 ─────────────────────────────
+def _discover_holdout_reports() -> list[Path]:
+    """列出留出集实测结果（holdout_<集>_run_<序>.json），按 mtime 降序=最新一次在前。
+
+    为什么按文件发现而不是写死文件名：写死会把看板永远停在 F 集（v0.8.0 的缺陷）。
+    E 代旧命名 `holdout_run_04.json` 不含 `_集_run_` 段，此通配天然不匹配，不会混入。
+    """
+    reports = PROJECT_ROOT / "reports"
+    return sorted(reports.glob("holdout_*_run_*.json"),
+                  key=lambda p: p.stat().st_mtime, reverse=True)
+
+
 def _holdout_stats(path: Path) -> dict | None:
     if not path.exists():
         return None
@@ -242,18 +253,27 @@ def _holdout_stats(path: Path) -> dict | None:
         slot[1] += 1
         if row.get("gold") == row.get("sys"):
             slot[0] += 1
+    # 文件名形如 holdout_<集>_run_<序>.json → 取集合名；异常命名回退 "?"
+    parts = path.stem.split("_")
+    split_name = parts[1] if len(parts) >= 4 else "?"
     return {
         "n": len(data),
         "ok": sum(1 for r in data if r.get("gold") == r.get("sys")),
         "by_probe": by_probe,
         "model": data[0].get("model", "?"),
+        "split": split_name,
+        "file": path.name,
     }
 
 
 def _tab_metrics() -> None:
     st.subheader("留出集成绩")
-    stats = _holdout_stats(PROJECT_ROOT / "reports" / "holdout_F_run_01.json")
+    files = _discover_holdout_reports()
+    stats = _holdout_stats(files[0]) if files else None
     if stats:
+        if len(files) > 1:  # 两套以上留出结果时可切换对比
+            pick = st.radio("数据集（默认最新一次）", files, index=0, format_func=lambda p: p.stem)
+            stats = _holdout_stats(pick)
         cols = st.columns(4)
         cols[0].metric("人机一致率", f"{stats['ok'] / stats['n']:.1%}", f"{stats['ok']}/{stats['n']}")
         for i, (probe, label) in enumerate(
@@ -261,9 +281,15 @@ def _tab_metrics() -> None:
         ):
             ok, total = stats["by_probe"].get(probe, [0, 0])
             cols[i].metric(label, f"{ok}/{total}")
-        st.caption(f"模型 {stats['model']}　数据来自 reports/holdout_F_run_01.json（只跑一次）")
+        # 显著标注口径：离开"模型·集合·n"这个数就不允许出口
+        st.markdown(
+            f"**{stats['model']} · {stats['split']} 集 · n={stats['n']} · 只跑一次**"
+        )
+        st.caption(f"数据来自 reports/{stats['file']}。换模型等于换仪器，不同集合的数字不可并排比。")
     else:
-        st.info("还没有留出集结果文件。跑一次：python -m src.cli.eval.run_judge --cases data/golden/golden_holdout_f.json")
+        st.info("还没有留出集结果文件。跑一次："
+                "python -m src.cli.eval.run_judge --fanout --cases data/golden/golden_holdout_g.json "
+                "--json-out reports/holdout_G_run_01.json")
 
     st.divider()
     st.subheader("成本与延迟")
