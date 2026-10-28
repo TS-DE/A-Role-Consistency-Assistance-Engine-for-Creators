@@ -6,8 +6,9 @@
 
 | 版本 | 日期 | 主题 | 关键产物 |
 | --- | --- | --- | --- |
-| v0.8.0 | 2026-10-28 | G01–G08 留出集（一次性实测并退役） | `data/golden/golden_holdout_g.json`（19 条，spec 0.4 盲写）；**14/19 = 73.7%（qwen3.8-flash）**；目标轴 G07 4/4 全对；5 条新分歧记入 docs/07 §九 转 H 批 |
-| v0.7.1 | 2026-10-28 | watson_rapport 划界修订（修 F07-b 漏杀 + 守夜误杀） | spec 0.4：调侃/否定界 + 健康界两条可判定分界；两轮 E 回归终验 16/17（flash）；docs/01 四·补三、docs/07 §八 |
+| v0.8.1 | 2026-10-28 | 答辩前冻结：看板自动发现留出结果 + 章节编号去重 + 指标口径统一 | `src/web/app.py` 留出结果按 mtime 发现 + radio 切换 + 口径行；docs/07 G 两节改 §十/§十一（含全库引用同步）；README/docs/07§六 主数 73.7%(flash/G/n=19) 与 94.1%(27b/F) 分仪器标注；agent_docs 讲稿同步（不入库）；**rule/anti/聚合/gold 零改动** |
+| v0.8.0 | 2026-10-28 | G01–G08 留出集（一次性实测并退役） | `data/golden/golden_holdout_g.json`（19 条，spec 0.4 盲写）；**14/19 = 73.7%（qwen3.8-flash）**；目标轴 G07 4/4 全对；5 条新分歧记入 docs/07 §十一 转 H 批 |
+| v0.7.1 | 2026-10-28 | watson_rapport 划界修订（修 F07-b 漏杀 + 守夜误杀） | spec 0.4：调侃/否定界 + 健康界两条可判定分界；两轮 E 回归终验 16/17（flash）；docs/01 四·补三、docs/07 §十 |
 | v0.7.0 | 2026-10-27 | 演示界面（Streamlit） | `src/web/app.py` 双页签：创作台（含真 HITL 交互与实测时间线）、指标看板（读真实结果文件） |
 | v0.6.2 | 2026-10-27 | 结构整改批次 B | `src/cli/` 拆 `eval/`（离线评测）与 `serve/`（运行时入口），文档与测试 import 同步 |
 | v0.6.1 | 2026-10-27 | 结构整改批次 A | 数据迁至 `data/golden/`、运维脚本迁至 `tests/scripts/`、`tools/` 并入 `src/cli/tools/`、12 个文档路径同步 |
@@ -30,6 +31,60 @@
 
 ---
 
+## v0.8.1 · 2026-10-28 · 答辩前冻结：看板数据源 + 章节编号 + 指标口径
+
+### 1. 原有缺陷
+
+- **docs/07 章节号重复**：10-28 追加 G 相关内容时又用了"八、九"，与 10-27 已有的
+  §八（F 集成绩）、§九（模型对照）撞号——全库 7 处"docs/07 §九"类引用出现歧义。
+- **指标看板写死退役集**：`src/web/app.py:255` 永远读 `holdout_F_run_01.json`。G 已实测，
+  演示屏上却是退役的 F/27b 成绩，答辩问到"最新一次留出"时屏幕与事实不符。
+- **口径裸奔**：94.1% 在 docs/07§六、docs/10、agent_docs 讲稿中多处**不带模型/集合/n**出口；
+  而 E 回归(flash)=16/17 与 F(27b)=16/17 **同值巧合**——只报数字必然被问穿。
+
+### 2. 改进技术
+
+- docs/07：G 两节重编号为 **§十（G 集规则修订落地）**、**§十一（G 集一次性实测结果）**；
+  同步全库引用（CHANGELOG 6 处、data/golden/README 1 处；v0.2.4 历史条目里的"第八节"
+  指当时的 §八 F 节，**属事实记录不改**）。
+- `src/web/app.py`：新增 `_discover_holdout_reports()`（glob `holdout_*_run_*.json` 按 mtime
+  降序——E 代旧命名 `holdout_run_*.json` 通配不中，天然排除）；`_holdout_stats()` 返回值加
+  `split`/`file`；`_tab_metrics()` 默认显示最新一次实测（现为 G），≥2 份结果时 `st.radio`
+  切换，卡片下方**强制显示加粗口径行「模型 · 集合名 · n · 只跑一次」**。数字仍由结果文件
+  现算，未引入任何写死指标。
+- README 新增"指标口径"节：主数 73.7%（qwen3.8-flash/G/n=19）、历史基线 94.1%
+  （qwen3.8-27b/F/n=17，标"不同仪器"）、回归 16/17（flash/E，标"不得当留出成绩报"）三行分离。
+- docs/07 §六 表增补同口径三行；docs/10 讲稿引语补标模型；docs/09 §十 看板数据源描述更新。
+- agent_docs/13/14/16（录屏讲稿/逐字稿/交接指南，不入库）：看板段念稿改为与屏幕一致的
+  G 数（73.7%、3/4、8/9、3/6），历史语境的 94.1% 全部括注"模型/集合/轮次"。
+- **禁止项自检**：`rule/anti_pattern/聚合` 零改动（`build_judge_yaml` 重建后 `git diff
+  data/characters/` 为空）；G 的 gold 零改动；正文无 94.1% 与 73.7% 的并排涨跌表述。
+
+### 3. 对应代码位置
+
+- `src/web/app.py`：`_discover_holdout_reports()` / `_holdout_stats()`（return 处）/ `_tab_metrics()`
+- `docs/07-A03泄漏审计.md`：§六 表末 3 行、§十、§十一
+- `README.md`："指标口径"节；`docs/09-闭环与状态图.md`：§十 表看板行；
+  `docs/10-生成质量评估.md`：讲稿引语
+- `data/golden/README.md`：G 行引用 §十一；`CHANGELOG.md`：本条 + 历史引用修订
+
+### 4. 验证流程
+
+```bash
+python -c "from src.web.app import _discover_holdout_reports, _holdout_stats; \
+  s=_holdout_stats(_discover_holdout_reports()[0]); assert s['split']=='G' and s['n']==19 \
+  and s['model']=='qwen3.8-flash' and f\"{s['ok']/s['n']:.1%}\"=='73.7%'"
+python -m streamlit run src/web/app.py --server.headless true --server.port 8511
+curl http://127.0.0.1:8511/_stcore/health          # 期望 ok
+python -m src.cli.tools.build_judge_yaml && git diff --stat data/characters/   # 期望空
+python -m tests.judge.test_* …(11 个模块) + tests.scripts.validate_golden     # 期望全 exit=0
+```
+
+实测：发现顺序 `[holdout_G_run_01, holdout_F_run_01]`，断言全过（默认口径
+qwen3.8-flash / G 集 / 73.7% / n=19）；headless 启动 health=`ok`；
+`build_judge_yaml` 后 `git diff data/characters/` 为空（判定逻辑冻结自证）；
+11 个离线模块 + validate_golden 全部 exit=0。
+
 ## v0.8.0 · 2026-10-28 · G 留出集：一次性实测并退役
 
 ### 1. 原有缺陷
@@ -48,14 +103,14 @@
     c/d 测健康界（症状事实关心 vs 宿命预言）——G07-c 判 1 即修复失败；
   - **先定 gold 再跑**：gold 依冻结的 spec 0.4 盲写，写作未参考任何判定输出；
     头部 how_to_use 含"写集与调规为同一 AI"的诚实声明与分界说明。
-- 只跑一次并即刻退役（README 身份表已改"已用尽"）；5 条分歧只诊断记录（docs/07 §九），
+- 只跑一次并即刻退役（README 身份表已改"已用尽"）；5 条分歧只诊断记录（docs/07 §十一），
   规则零改动——改了规则 G 作废得更快，验证归 H 批。
 
 ### 3. 对应代码位置
 
 - `data/golden/golden_holdout_g.json`（新建，sealed/retired）
 - `data/golden/README.md`：身份表 G 行（未跑 → 已用尽）
-- `docs/07-A03泄漏审计.md`：§九（口径、G07 验证表、5 条分歧诊断、结论）
+- `docs/07-A03泄漏审计.md`：§十一（口径、G07 验证表、5 条分歧诊断、结论）
 - `reports/holdout_G_run_01.json`：逐条原始结果（含 hits/ambiguity/invalid）
 
 ### 4. 验证流程
@@ -75,7 +130,7 @@ python -m src.cli.eval.run_judge --fanout --cases data/golden/golden_holdout_g.j
 - 主目标达成：**G07 修复验证 4/4 全对**（调侃放行、否定命中、关心放行、预言命中）——
   F07-b 同类句与守夜误杀两类失败在新规则下均被正确处置。
 - 新记录 5 条分歧（2 漏杀、2 跨轴误杀、1 计数），全部是语用边界族，转 H 批待办
-  （docs/07 §九 表）。flash 总分与其在 F 上的 76.5% 同档，n=19 下 1 条=5.3%，不作模型结论。
+  （docs/07 §十一 表）。flash 总分与其在 F 上的 76.5% 同档，n=19 下 1 条=5.3%，不作模型结论。
 
 ## v0.7.1 · 2026-10-28 · watson_rapport 划界修订
 
@@ -102,14 +157,14 @@ E06 canon_note / docs/01 等外部引用安全）：
   末式为 E 回归第一轮暴露的缝隙（E06-b 被放行），第二轮前补入。
 - 使唤跑腿按**"非违规"**划出而非补成 anti_pattern：原作风常差遣华生，补成违规会批量误杀。
 - cross_trait_index 第 1 条同步收窄；exemplar note 判据改为"是否留在搭档框架内"。
-- 文档：docs/01 新增四·补三（判据表 + 锚点对照 + 代价），docs/07 新增 §八（修订落地 + G 封存声明）。
+- 文档：docs/01 新增四·补三（判据表 + 锚点对照 + 代价），docs/07 新增 §十（修订落地 + G 封存声明）。
 
 ### 3. 对应代码位置
 
 - `data/characters/sherlock.yaml`：`meta.spec_version`、`watson_rapport.rule(2)(3)(5)(6)`、
   `anti_patterns[1][2]`、`exemplars[0].why/note`、`cross_trait_index[0].when`、卡头修订注释
 - `data/characters/sherlock.judge.yaml`：重建产物（不手改）
-- `docs/01-一致性规格书.md`：四·补三；`docs/07-A03泄漏审计.md`：§八
+- `docs/01-一致性规格书.md`：四·补三；`docs/07-A03泄漏审计.md`：§十
 
 ### 4. 验证流程
 
