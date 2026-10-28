@@ -104,8 +104,11 @@ class TraitEvaluator:
                     self._emit(cand["id"], trait_id, True, "")
 
             if self._consecutive_failures >= MAX_CONSECUTIVE_FAILURES:
+                # 把最近两条失败原因带上：只说"网络不可用"等于让人猜，
+                # 而 429（限流）与 DNS（断网）的处理方式完全不同。
+                reasons = "; ".join(list(failures.values())[:2])
                 raise JudgeAborted(
-                    f"连续 {self._consecutive_failures} 次调用失败，判定网络不可用"
+                    f"连续 {self._consecutive_failures} 次调用失败，判定中断：{reasons[:200]}"
                 )
             pending = still_failed
             if not pending:

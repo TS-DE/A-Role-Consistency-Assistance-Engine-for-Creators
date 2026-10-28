@@ -30,6 +30,7 @@ from src.graph.state import new_state
 from src.judge.chat_model import ChatModelError, build_generator_model, build_judge_model
 from src.judge.constants import MAX_REWRITE_ATTEMPTS, PROJECT_ROOT
 from src.judge.env_loader import EnvLoader
+from src.judge.evaluator import JudgeAborted
 from src.judge.spec_loader import SpecLoader
 
 PRESETS = {
@@ -66,19 +67,37 @@ def _init_state() -> None:
         "result": None,
         "pending": None,
         "thread": None,
+        "error": None,
     }
     for key, value in defaults.items():
         st.session_state.setdefault(key, value)
 
 
+def _friendly_error(exc: Exception) -> str:
+    """把技术异常翻译成"下一步该干什么"。演示时绝不把 traceback 甩给观众。"""
+    text = str(exc)
+    lowered = text.lower()
+    if "429" in text or "rate limit" in lowered or "too many" in lowered:
+        return f"被服务端限流（429）。等 1 分钟再点重试；反复出现就把 .env 的并发调小。\n\n{text[:300]}"
+    if "timed out" in lowered or "timeout" in lowered:
+        return f"调用超时。网络抖动或服务端慢，重试通常就好。\n\n{text[:300]}"
+    if "getaddrinfo" in lowered or "resolve" in lowered:
+        return f"域名解析失败——本机此刻连不上模型服务。检查网络后重试。\n\n{text[:300]}"
+    return f"{type(exc).__name__}: {text[:300]}"
+
+
 def _run(scene: str) -> None:
     graph, generator, judge = make_graph()
     thread = {"configurable": {"thread_id": f"ui-{time.time_ns()}"}}
+    st.session_state["error"] = None
     with st.spinner(f"生成（{generator.model}）→ 判定（{judge.model}，8 轴并发）…约 40–90 秒"):
         try:
             state = graph.invoke(new_state(scene), thread)
-        except ChatModelError as exc:
-            st.error(f"模型调用失败：{exc}")
+        except (ChatModelError, JudgeAborted) as exc:
+            st.session_state["error"] = _friendly_error(exc)
+            return
+        except Exception as exc:  # noqa: BLE001  兜底：页面永远不该出现 traceback
+            st.session_state["error"] = _friendly_error(exc)
             return
     st.session_state.update(
         result=state,
@@ -90,11 +109,15 @@ def _run(scene: str) -> None:
 def _resume(choice: str) -> None:
     graph, _generator, _judge = make_graph()
     thread = st.session_state["thread"]
+    st.session_state["error"] = None
     with st.spinner("恢复执行…"):
         try:
             state = graph.invoke(Command(resume=choice), thread)
-        except ChatModelError as exc:
-            st.error(f"模型调用失败：{exc}")
+        except (ChatModelError, JudgeAborted) as exc:
+            st.session_state["error"] = _friendly_error(exc)
+            return
+        except Exception as exc:  # noqa: BLE001
+            st.session_state["error"] = _friendly_error(exc)
             return
     st.session_state.update(result=state, pending=None)
 
@@ -150,6 +173,15 @@ def _tab_create() -> None:
 
 
 def _render_result() -> None:
+    # 先看错误：失败时 result 仍是 None，若先判空返回，错误永远显示不出来
+    if st.session_state.get("error"):
+        st.error(f"这次没跑成：\n\n{st.session_state['error']}")
+        if st.button("重试", use_container_width=True):
+            st.session_state["error"] = None
+            _run(st.session_state["scene"])
+            st.rerun()
+        return
+
     state = st.session_state.get("result")
     if not state:
         st.info("左侧输入情境后点「生成并校验」。判定跑 8 条规则，约 40–90 秒。")
