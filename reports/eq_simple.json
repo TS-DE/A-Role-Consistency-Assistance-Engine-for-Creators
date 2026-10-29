@@ -1,0 +1,660 @@
+[
+  {
+    "id": "E01-a",
+    "trait": "emotional_restraint",
+    "probe": "leak",
+    "gold": 0,
+    "sys": 0,
+    "repeat_scores": [
+      0
+    ],
+    "stable": true,
+    "hard_hits": [
+      {
+        "trait": "emotional_restraint",
+        "pattern": "拥抱/抚摸/握手等肢体温情",
+        "quote": "Holmes crossed the room and put a hand on Watson's shoulder.",
+        "severity": "hard"
+      },
+      {
+        "trait": "emotional_restraint",
+        "pattern": "抒情式共情与自我情绪表露（\"我的心也在痛\"）",
+        "quote": "Let it out, old fellow.",
+        "severity": "hard"
+      }
+    ],
+    "soft_traits": [
+      "voice_register"
+    ],
+    "n_soft": 1,
+    "hits": [
+      {
+        "trait": "emotional_restraint",
+        "pattern": "拥抱/抚摸/握手等肢体温情",
+        "quote": "Holmes crossed the room and put a hand on Watson's shoulder.",
+        "severity": "hard"
+      },
+      {
+        "trait": "emotional_restraint",
+        "pattern": "抒情式共情与自我情绪表露（\"我的心也在痛\"）",
+        "quote": "Let it out, old fellow.",
+        "severity": "hard"
+      },
+      {
+        "trait": "voice_register",
+        "pattern": "使用家常闲聊、无意义式寒暄",
+        "quote": "Let it out, old fellow.",
+        "severity": "soft"
+      },
+      {
+        "trait": "voice_register",
+        "pattern": "大段抒情感慨、情绪宣泄",
+        "quote": "There is no shame in it.",
+        "severity": "soft"
+      },
+      {
+        "trait": "watson_rapport",
+        "pattern": "温柔共情、主动安慰关怀",
+        "quote": "Let it out, old fellow.",
+        "severity": "soft"
+      },
+      {
+        "trait": "watson_rapport",
+        "pattern": "温柔共情、主动安慰关怀",
+        "quote": "There is no shame in it.",
+        "severity": "soft"
+      }
+    ],
+    "invalid": [],
+    "ambiguity": [
+      {
+        "trait": "evidence_first",
+        "text": "该回复没有案情指认、结论或判断，仅是对华生的情绪安慰，不触发 evidence_first 的证据要求。"
+      },
+      {
+        "trait": "voice_register",
+        "text": "Holmes crossed the room and put a hand on Watson's shoulder. 体现主动示好与肢体安慰，但不直接落在给定 anti_pattern 的语言片段上。"
+      },
+      {
+        "trait": "intellectual_appetite",
+        "text": "该回复未涉及案件、委托或智力刺激，无法对应 intellectual_appetite 的任一 anti_pattern；若视为主动情绪示好，属于其他 trait 范畴，本条不报。"
+      }
+    ],
+    "model": "qwen3.8-flash"
+  },
+  {
+    "id": "E01-b",
+    "trait": "emotional_restraint",
+    "probe": "false_alarm",
+    "gold": 2,
+    "sys": 2,
+    "repeat_scores": [
+      2
+    ],
+    "stable": true,
+    "hard_hits": [],
+    "soft_traits": [],
+    "n_soft": 0,
+    "hits": [],
+    "invalid": [],
+    "ambiguity": [
+      {
+        "trait": "intellectual_appetite",
+        "text": "回复语气冷硬且带有指令性，但未对平淡小案子表现出兴致勃勃，也未直接拒绝或生硬逐客；无法逐字指认到任一 anti_pattern。"
+      },
+      {
+        "trait": "moral_flexibility",
+        "text": "候选回复仅涉及对儿童与刀具的物证判断，没有涉及是否送交警方、私放罪犯、复仇案件、法律变通或滥用私刑等道德弹性内容，无法指认任一 anti_pattern。"
+      }
+    ],
+    "model": "qwen3.8-flash"
+  },
+  {
+    "id": "E02-a",
+    "trait": "evidence_first",
+    "probe": "leak",
+    "gold": 0,
+    "sys": 0,
+    "repeat_scores": [
+      0
+    ],
+    "stable": true,
+    "hard_hits": [
+      {
+        "trait": "evidence_first",
+        "pattern": "无依据直接指认（\"凶手就是隔壁的面包师\"）",
+        "quote": "He is our man.",
+        "severity": "hard"
+      }
+    ],
+    "soft_traits": [],
+    "n_soft": 0,
+    "hits": [
+      {
+        "trait": "evidence_first",
+        "pattern": "无依据直接指认（\"凶手就是隔壁的面包师\"）",
+        "quote": "He is our man.",
+        "severity": "hard"
+      }
+    ],
+    "invalid": [],
+    "ambiguity": [
+      {
+        "trait": "evidence_first",
+        "text": "无法用单句 quote 完整覆盖‘形式上有细节但无推断链并据此定案’的跨句违规，故未单独报该 anti_pattern。"
+      },
+      {
+        "trait": "moral_flexibility",
+        "text": "无法从片段中确认对象是否属于情有可原的复仇案件，仅凭“Send for the constable.”不足以证明其僵化死守法条、毫无变通。"
+      }
+    ],
+    "model": "qwen3.8-flash"
+  },
+  {
+    "id": "E02-b",
+    "trait": "evidence_first",
+    "probe": "false_alarm",
+    "gold": 2,
+    "sys": 2,
+    "repeat_scores": [
+      2
+    ],
+    "stable": true,
+    "hard_hits": [],
+    "soft_traits": [],
+    "n_soft": 0,
+    "hits": [],
+    "invalid": [],
+    "ambiguity": [
+      {
+        "trait": "watson_rapport",
+        "text": "候选未提及华生，无法确认是否违反 watson_rapport；无逐字片段可指认 anti_pattern。"
+      },
+      {
+        "trait": "moral_flexibility",
+        "text": "该回复仅涉及物证与怀疑，未出现放走罪犯、无视法律或僵化守法条的情节，无法指认违反 moral_flexibility 的具体片段。"
+      }
+    ],
+    "model": "qwen3.8-flash"
+  },
+  {
+    "id": "E03-a",
+    "trait": "evidence_first",
+    "probe": "false_alarm",
+    "gold": 2,
+    "sys": 2,
+    "repeat_scores": [
+      2
+    ],
+    "stable": true,
+    "hard_hits": [],
+    "soft_traits": [],
+    "n_soft": 0,
+    "hits": [],
+    "invalid": [],
+    "ambiguity": [
+      {
+        "trait": "evidence_first",
+        "text": "“It is enough — I shall name him in the morning.” 可能被视为即将锁定具体人物，但同一句前文已引用三项可观测物证，且未明确给出具体姓名或定案内容，无法逐字指认为无依据直接指认。"
+      },
+      {
+        "trait": "intellectual_appetite",
+        "text": "无法从该回复逐字判定其面对的是平淡小案还是高智商谜案，也没有明确表现出无聊抱怨、亢奋专注、消沉打发时间或对平淡日常满足等可对应 anti_pattern 的字面行为。"
+      },
+      {
+        "trait": "moral_flexibility",
+        "text": "回复仅说明证据充分并将在早晨指认某人，未涉及是否送交警方、是否放走罪犯、复仇案件或法律变通，无法逐字指认违反任一 anti_pattern。"
+      }
+    ],
+    "model": "qwen3.8-flash"
+  },
+  {
+    "id": "E03-b",
+    "trait": "evidence_first",
+    "probe": "false_alarm",
+    "gold": 2,
+    "sys": 2,
+    "repeat_scores": [
+      2
+    ],
+    "stable": true,
+    "hard_hits": [],
+    "soft_traits": [],
+    "n_soft": 0,
+    "hits": [],
+    "invalid": [],
+    "ambiguity": [
+      {
+        "trait": "evidence_first",
+        "text": "回复提到“Three facts”但未具体引用可观测细节；然而其中没有指认、定案或案情结论，无法对应任何 anti_pattern。"
+      },
+      {
+        "trait": "intellectual_appetite",
+        "text": "无法从候选片段判断案件属于平淡小案还是顶级谜案，也不能确认其是否表现出对无聊案件的亢奋或对高智商案件的无动于衷。"
+      },
+      {
+        "trait": "moral_flexibility",
+        "text": "候选回复仅表示对事实尚不信任并要求一周时间，未出现可逐字指认的道德弹性违规片段。"
+      }
+    ],
+    "model": "qwen3.8-flash"
+  },
+  {
+    "id": "E04-a",
+    "trait": "era_consistency",
+    "probe": "leak",
+    "gold": 0,
+    "sys": 0,
+    "repeat_scores": [
+      0
+    ],
+    "stable": true,
+    "hard_hits": [
+      {
+        "trait": "era_consistency",
+        "pattern": "以\"否认/拒斥/自嘲\"包装年代外概念 —— 词表命中即违规，否定式不豁免",
+        "quote": "I know nothing of this 'blood grouping' you speak of.",
+        "severity": "hard"
+      }
+    ],
+    "soft_traits": [],
+    "n_soft": 0,
+    "hits": [
+      {
+        "trait": "era_consistency",
+        "pattern": "以\"否认/拒斥/自嘲\"包装年代外概念 —— 词表命中即违规，否定式不豁免",
+        "quote": "I know nothing of this 'blood grouping' you speak of.",
+        "severity": "hard"
+      }
+    ],
+    "invalid": [],
+    "ambiguity": [],
+    "model": "qwen3.8-flash"
+  },
+  {
+    "id": "E04-b",
+    "trait": "era_consistency",
+    "probe": "false_alarm",
+    "gold": 2,
+    "sys": 2,
+    "repeat_scores": [
+      2
+    ],
+    "stable": true,
+    "hard_hits": [],
+    "soft_traits": [],
+    "n_soft": 0,
+    "hits": [],
+    "invalid": [],
+    "ambiguity": [
+      {
+        "trait": "watson_rapport",
+        "text": "未明确被命令对象是否为华生；即便视为华生，使唤取物不违反 watson_rapport。"
+      },
+      {
+        "trait": "intellectual_appetite",
+        "text": "无法从该片段判断案件属于平淡小案还是顶级谜案，也没有明确表现出兴致勃勃、无动于衷、直接拒绝或生硬逐客等 anti_pattern。"
+      },
+      {
+        "trait": "moral_flexibility",
+        "text": "候选回复仅涉及物证与污渍推理，未出现对罪犯处置、法律遵守或复仇案件送交警方的表态，无法指认与道德弹性相关的违规片段。"
+      }
+    ],
+    "model": "qwen3.8-flash"
+  },
+  {
+    "id": "E05-a",
+    "trait": "no_glory_seeking",
+    "probe": "false_alarm",
+    "gold": 2,
+    "sys": 2,
+    "repeat_scores": [
+      2
+    ],
+    "stable": true,
+    "hard_hits": [],
+    "soft_traits": [],
+    "n_soft": 0,
+    "hits": [],
+    "invalid": [],
+    "ambiguity": [
+      {
+        "trait": "watson_rapport",
+        "text": "回复将华生指向雷斯垂德获取说明，可能显得冷淡或回避与华生直接交流，但未出现明确排除华生参与办案、否定其判断力或将其当外人的逐字片段。"
+      },
+      {
+        "trait": "intellectual_appetite",
+        "text": "回复仅建议询问雷斯垂德，未体现对平淡案件的兴致、对复杂案件的冷漠，或对委托的生硬逐客；无法指认任何 anti_pattern 片段。"
+      },
+      {
+        "trait": "moral_flexibility",
+        "text": "候选回复未涉及法律、私放罪犯、复仇案件或僵化守法等道德弹性内容，无法指认其落在任一 anti_pattern 上。"
+      }
+    ],
+    "model": "qwen3.8-flash"
+  },
+  {
+    "id": "E05-b",
+    "trait": "no_glory_seeking",
+    "probe": "boundary",
+    "gold": 1,
+    "sys": 1,
+    "repeat_scores": [
+      1
+    ],
+    "stable": true,
+    "hard_hits": [],
+    "soft_traits": [
+      "no_glory_seeking"
+    ],
+    "n_soft": 1,
+    "hits": [
+      {
+        "trait": "no_glory_seeking",
+        "pattern": "以\"一如既往 / 果然如此 / 每次都这样 / 总算轮到我\"这类措辞，暗示对功劳归属的怨气或得意",
+        "quote": "The Yard will take the credit, as it always does.",
+        "severity": "soft"
+      }
+    ],
+    "invalid": [],
+    "ambiguity": [
+      {
+        "trait": "evidence_first",
+        "text": "回复含有对苏格兰场会抢功的一般性判断，但不属于案情结论或具体指认，无法对应任何 anti_pattern。"
+      },
+      {
+        "trait": "evidence_first",
+        "text": "“I have my notes”只是处置性表述，按规则不算案情结论，因此不能据此判定证据优先违规。"
+      },
+      {
+        "trait": "intellectual_appetite",
+        "text": "无法从该片段确认所述案件属于平淡小案或顶级谜案，因此不能判定是否违反对案件兴趣不足/兴致勃勃的规则。"
+      },
+      {
+        "trait": "moral_flexibility",
+        "text": "句子涉及对警方抢功的冷淡态度，但未出现与法律、放走罪犯或僵化送监狱相关的逐字片段，无法判定违反 moral_flexibility。"
+      }
+    ],
+    "model": "qwen3.8-flash"
+  },
+  {
+    "id": "E06-a",
+    "trait": "voice_register",
+    "probe": "leak",
+    "gold": 0,
+    "sys": 0,
+    "repeat_scores": [
+      0
+    ],
+    "stable": true,
+    "hard_hits": [],
+    "soft_traits": [
+      "voice_register",
+      "watson_rapport"
+    ],
+    "n_soft": 2,
+    "hits": [
+      {
+        "trait": "voice_register",
+        "pattern": "以\"我\"为中心替对方做人生决定 / 宣誓式台词（大男主腔）",
+        "quote": "You are not going.",
+        "severity": "soft"
+      },
+      {
+        "trait": "voice_register",
+        "pattern": "以\"我\"为中心替对方做人生决定 / 宣誓式台词（大男主腔）",
+        "quote": "I forbid it — this is mine to do.",
+        "severity": "soft"
+      },
+      {
+        "trait": "watson_rapport",
+        "pattern": "以对方健康/安危作冷嘲（宿命预言、能力否定判词、或以身体状况给对方归类排除；单纯症状事实陈述加命令式关心不适用本条）",
+        "quote": "Your heart would give out before the first cab.",
+        "severity": "soft"
+      }
+    ],
+    "invalid": [],
+    "ambiguity": [
+      {
+        "trait": "evidence_first",
+        "text": "回复中的判断是针对华生身体状况的阻止性关心，并非案情指认或证据推论；按豁免清单中‘以实用方式关心华生’放行。"
+      },
+      {
+        "trait": "emotional_restraint",
+        "text": "回复中的身体判断与接手工作属于允许的实用关切，且无肢体安抚、抒情共情或连续两轮主动关心，无法指认违规片段。"
+      }
+    ],
+    "model": "qwen3.8-flash"
+  },
+  {
+    "id": "E06-b",
+    "trait": "voice_register",
+    "probe": "boundary",
+    "gold": 1,
+    "sys": 1,
+    "repeat_scores": [
+      1
+    ],
+    "stable": true,
+    "hard_hits": [],
+    "soft_traits": [
+      "watson_rapport"
+    ],
+    "n_soft": 1,
+    "hits": [
+      {
+        "trait": "watson_rapport",
+        "pattern": "以对方健康/安危作冷嘲（宿命预言、能力否定判词、或以身体状况给对方归类排除；单纯症状事实陈述加命令式关心不适用本条）",
+        "quote": "The docks at night are no place for a man with your chest.",
+        "severity": "soft"
+      }
+    ],
+    "invalid": [],
+    "ambiguity": [
+      {
+        "trait": "intellectual_appetite",
+        "text": "该回复仅劝对方回家，未出现案件、委托或智力兴趣相关表述；若上下文是委托人上门，'Go home.' 可能接近生硬逐客，但当前片段无法指认属于该规则的平淡小案/谜案/委托情境。"
+      },
+      {
+        "trait": "moral_flexibility",
+        "text": "回复未涉及法律、私放罪犯、复仇案件、恶意谋杀或滥用私刑等道德弹性相关内容，无法指认任何 anti_pattern。"
+      }
+    ],
+    "model": "qwen3.8-flash"
+  },
+  {
+    "id": "E06-c",
+    "trait": "voice_register",
+    "probe": "false_alarm",
+    "gold": 2,
+    "sys": 1,
+    "repeat_scores": [
+      1
+    ],
+    "stable": true,
+    "hard_hits": [],
+    "soft_traits": [
+      "voice_register"
+    ],
+    "n_soft": 1,
+    "hits": [
+      {
+        "trait": "voice_register",
+        "pattern": "[soft] pattern: 以\"我\"为中心替对方做人生决定 / 宣誓式台词（大男主腔）",
+        "quote": "We go together, or not at all.",
+        "severity": "soft"
+      }
+    ],
+    "invalid": [],
+    "ambiguity": [
+      {
+        "trait": "evidence_first",
+        "text": "回复含有对行动地点安全性的判断，但属于处置性建议而非案情结论、指认或定案，无法按 evidence_first 的 anti_pattern 指认具体违规。"
+      },
+      {
+        "trait": "moral_flexibility",
+        "text": "回复未涉及法律、罪犯处置、复仇或私刑等道德弹性内容，无法指认任何 anti_pattern 片段"
+      }
+    ],
+    "model": "qwen3.8-flash"
+  },
+  {
+    "id": "E07-a",
+    "trait": "watson_rapport",
+    "probe": "false_alarm",
+    "gold": 2,
+    "sys": 2,
+    "repeat_scores": [
+      2
+    ],
+    "stable": true,
+    "hard_hits": [],
+    "soft_traits": [],
+    "n_soft": 0,
+    "hits": [],
+    "invalid": [],
+    "ambiguity": [
+      {
+        "trait": "evidence_first",
+        "text": "回复包含对观察先后与两人差异的判断，但未指认案情或罪犯，且提到了可观测细节 Wet；无法对应任何 anti_pattern。"
+      },
+      {
+        "trait": "no_glory_seeking",
+        "text": "句子带有“我比你先注意到”的优越感，但未明确涉及媒体炫耀、警方抢功、索要名誉或“没有我你们破不了案”式邀功，无法指认具体 anti_pattern。"
+      },
+      {
+        "trait": "voice_register",
+        "text": "“which is the whole difference between us”带有对华生的调侃意味，但未命中任一 anti_pattern 原文，且属于冷嘲热讽/精简陈述，不视为违规。"
+      },
+      {
+        "trait": "watson_rapport",
+        "text": "“which is the whole difference between us”接近对两人观察力差异的强调，但未见明确否定华生永久资格、将其降格为工具或拒绝其参与办案；与正例“You see, but you do not observe.”同属轻度调侃，故未判违规。"
+      }
+    ],
+    "model": "qwen3.8-flash"
+  },
+  {
+    "id": "E07-b",
+    "trait": "watson_rapport",
+    "probe": "boundary",
+    "gold": 1,
+    "sys": 1,
+    "repeat_scores": [
+      1
+    ],
+    "stable": true,
+    "hard_hits": [],
+    "soft_traits": [
+      "watson_rapport"
+    ],
+    "n_soft": 1,
+    "hits": [
+      {
+        "trait": "watson_rapport",
+        "pattern": "极度刻薄或把华生降格为工具：否定其永久资格（无用论／够不着论／只配充当单一功能），或拒绝让他参与办案",
+        "quote": "You are a good pair of eyes and nothing more.",
+        "severity": "soft"
+      },
+      {
+        "trait": "watson_rapport",
+        "pattern": "极度刻薄或把华生降格为工具：否定其永久资格（无用论／够不着论／只配充当单一功能），或拒绝让他参与办案",
+        "quote": "Leave the thinking to me.",
+        "severity": "soft"
+      }
+    ],
+    "invalid": [],
+    "ambiguity": [
+      {
+        "trait": "no_glory_seeking",
+        "text": "候选句带有自我标榜推理能力的语气，但未逐字出现媒体/头条、警方抢功、索要名誉勋章、公开赞美或“没有我你们破不了案”等邀功名利表达，无法对应具体 anti_pattern。"
+      },
+      {
+        "trait": "voice_register",
+        "text": "候选有轻微自我中心和命令式语气（'Leave the thinking to me'），但不构成已列明的寒暄、抒情感慨或宣誓式替对方做人生决定，无法指认到具体 anti_pattern。"
+      },
+      {
+        "trait": "intellectual_appetite",
+        "text": "回复表现的是对同伴/华生的智力支配语气，但未涉及案件平淡、高智商谜案、无事可做或日常满足，无法对应本 trait 的任一 anti_pattern。"
+      }
+    ],
+    "model": "qwen3.8-flash"
+  },
+  {
+    "id": "E08-a",
+    "trait": "moral_flexibility",
+    "probe": "false_alarm",
+    "gold": 2,
+    "sys": 2,
+    "repeat_scores": [
+      2
+    ],
+    "stable": true,
+    "hard_hits": [],
+    "soft_traits": [],
+    "n_soft": 0,
+    "hits": [],
+    "invalid": [],
+    "ambiguity": [
+      {
+        "trait": "evidence_first",
+        "text": "“He killed the man who killed his child — once, and then stopped.” 可能是在复述输入中已给出的前提事实，按规则(6)不要求证据链；由于未提供输入，无法确认其是否构成新指认，故不报。"
+      },
+      {
+        "trait": "voice_register",
+        "text": "回复中存在“I shall not give him to Lestrade. But if he lifts a hand again, I will.”这类个人裁决式表达，可能接近‘以我为中心’的语气；但候选并未替对方做人生决定，也不是宣誓式保护台词，且句子短、无感叹、无闲聊或大段抒情，无法指认到任一列出的 anti_pattern。"
+      },
+      {
+        "trait": "watson_rapport",
+        "text": "候选回复未涉及与华生的关系，也没有可逐字指认的温柔共情、工具化否定、拒绝参与办案或以健康/安危冷嘲的片段，因此无法判定违反该 trait。"
+      },
+      {
+        "trait": "intellectual_appetite",
+        "text": "候选回复未出现可逐字指认的片段能对应‘对平淡小案子兴致勃勃’、‘对顶级谜案无动于衷’或‘对委托直接拒绝/生硬逐客’；其内容是关于是否交给 Lestrade 的处置，不构成该 trait 的明确违规。"
+      }
+    ],
+    "model": "qwen3.8-flash"
+  },
+  {
+    "id": "E08-b",
+    "trait": "moral_flexibility",
+    "probe": "boundary",
+    "gold": 1,
+    "sys": 2,
+    "repeat_scores": [
+      2
+    ],
+    "stable": true,
+    "hard_hits": [],
+    "soft_traits": [],
+    "n_soft": 0,
+    "hits": [],
+    "invalid": [],
+    "ambiguity": [
+      {
+        "trait": "evidence_first",
+        "text": "未包含案情结论、人物指认或证据判断，因此不触发 evidence_first 违规"
+      },
+      {
+        "trait": "voice_register",
+        "text": "候选句不是事实陈述或逻辑推演，带有对同伴的戏谑许可，但未明确落入任一 anti_pattern，不能计为命中。"
+      },
+      {
+        "trait": "watson_rapport",
+        "text": "回复未明确对华生进行资格否定、工具化或拒绝参与办案；'I am busy' 仅为忙碌陈述，无法逐字对应任一 anti_pattern。"
+      },
+      {
+        "trait": "intellectual_appetite",
+        "text": "“I am busy.”可被解读为生硬拒绝，但候选文本未明确出现“送来门的委托”，无法逐字指认其落入“对送来门的委托直接拒绝或生硬逐客”这一 anti_pattern。"
+      },
+      {
+        "trait": "intellectual_appetite",
+        "text": "“Kill whom you like, so long as you mean it.”未明确显示对平淡小案兴致勃勃，也未显示面对顶级谜案无动于衷，无法指认到任一 anti_pattern。"
+      },
+      {
+        "trait": "moral_flexibility",
+        "text": "候选中的“Kill whom you like, so long as you mean it.”字面纵容杀人，可能触及“不会无视法律肆意杀人”；但给定 anti_pattern 分别要求“放走蓄意杀人的歹徒”或“僵化送进监狱”，该句没有逐字对应“放走”或“送进监狱”的片段，因此不报命中。"
+      }
+    ],
+    "model": "qwen3.8-flash"
+  }
+]
