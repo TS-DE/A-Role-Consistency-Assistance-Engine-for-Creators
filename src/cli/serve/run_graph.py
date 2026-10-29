@@ -28,6 +28,7 @@ from src.graph.builder import (
     agent_mode_label,
     build_graph,
     current_agent_mode,
+    current_arbiter_merge,
 )
 from src.graph.state import GraphState, new_state
 from src.judge.chat_model import ChatModelError, build_generator_model, build_judge_model
@@ -107,8 +108,9 @@ def main(argv: list[str] | None = None) -> int:
 
     EnvLoader().load()
     try:
-        # 模式必须在此处解析一次并复用：打印的、建图用的、选钩子的，同一个结果
+        # 模式与合并开关必须在此处解析一次并复用：打印的、建图用的、选钩子的，同一个结果
         mode = current_agent_mode()
+        merge = current_arbiter_merge()
     except ValueError as exc:
         print(f"配置错误，中止：{exc}")
         return 2
@@ -116,13 +118,14 @@ def main(argv: list[str] | None = None) -> int:
     generator, judge = build_generator_model(), build_judge_model()
     print(f"场景：{scene}")
     print(f"生成模型：{generator.model}　判定模型：{judge.model}")
-    print(f"判定模式：{agent_mode_label(mode)}")
+    print(f"判定模式：{agent_mode_label(mode)}｜落句级裁决合并：{'on' if merge else 'off'}")
 
     graph = build_graph(
         spec, generator, judge,
         max_attempts=MAX_REWRITE_ATTEMPTS,
         on_progress=_axis_hook if mode == AGENT_MODE_BLACKBOARD else _fail_hook,
         agent_mode=mode,
+        arbiter_merge=merge,
     )
     config = {"configurable": {"thread_id": f"roleguard-{int(time.time())}"}}
 
