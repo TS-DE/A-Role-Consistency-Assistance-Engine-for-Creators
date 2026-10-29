@@ -22,14 +22,23 @@ from typing import Any, Callable
 
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, StateGraph
-from langgraph.types import interrupt
+from langgraph.types import Send, interrupt
 
+from src.graph.nodes.arbiter import Arbiter
+from src.graph.nodes.experts import TraitExpert
 from src.graph.nodes.generate import GenerateNode
 from src.graph.nodes.verify import VerifyNode
 from src.graph.routing import HUMAN, PASS, REWRITE, decide
 from src.graph.state import GraphState, trace_entry
+from src.judge.aggregator import ScoreAggregator
 from src.judge.chat_model import ChatModel
 from src.judge.constants import MAX_REWRITE_ATTEMPTS
+from src.judge.env_loader import EnvLoader
+from src.judge.evaluator import TraitEvaluator
+
+# 回退开关：AGENT_MODE 环境变量（默认 simple，即现行为；blackboard=8 专家写板 + 裁决者读板）
+AGENT_MODE_SIMPLE = "simple"
+AGENT_MODE_BLACKBOARD = "blackboard"
 
 ProgressHook = Callable[[str, str, bool, str], None]
 
@@ -92,6 +101,60 @@ def human_node(state: GraphState) -> dict[str, Any]:
     }
 
 
+def _resolve_agent_mode(agent_mode: str | None) -> str:
+    """显式参数 > 环境变量 AGENT_MODE > simple。
+
+    默认必须落在 simple：这是回退开关，环境变量缺失/拼写外的值都要能退回现行为；
+    未知取值直接报错，不静默降级——静默回退会让"以为开了黑板其实没开"成为最难查的 bug。
+    """
+    resolved = (agent_mode or EnvLoader.get("AGENT_MODE", default=AGENT_MODE_SIMPLE)
+                or AGENT_MODE_SIMPLE).strip().lower()
+    if resolved not in (AGENT_MODE_SIMPLE, AGENT_MODE_BLACKBOARD):
+        raise ValueError(f"未知 AGENT_MODE：{resolved}（可用：simple / blackboard）")
+    return resolved
+
+
+def _wire_blackboard(builder: StateGraph, spec: dict[str, Any], judge: ChatModel,
+                     route: Callable[[GraphState], str],
+                     on_progress: ProgressHook | None) -> None:
+    """黑板接线：generate → fan_out --Send×N--> expert__轴 → arbiter → route。
+
+    共享一个 TraitEvaluator 实例（连续失败计数等内部状态本就应全局共享），
+    每个 TraitExpert 节点只往 board 追加自己的一条；聚合只在 Arbiter。
+    """
+    trait_ids = list(spec["_traits_by_id"])
+    evaluator = TraitEvaluator(spec, judge, on_progress=on_progress)
+    expert = TraitExpert(spec, evaluator)   # 无状态实例，8 个节点名共用同一个 callable
+
+    def fan_out_node(state: GraphState) -> dict[str, Any]:
+        """只记一条调度日志。trace 通道无 reducer，并行分支不许写它——所以日志记在扇出点。"""
+        dispatched = 0 if not str(state.get("draft", "")).strip() else len(trait_ids)
+        return {"trace": list(state.get("trace", []))
+                + [trace_entry("fan_out", {"attempt": int(state.get("attempt", 0)),
+                                            "dispatched": dispatched})]}
+
+    def dispatch(state: GraphState) -> Any:
+        draft = str(state.get("draft", "")).strip()
+        if not draft:
+            # 空草稿不派专家（等于 simple 模式 VerifyNode 的守卫前置）；arbiter 里出同形结果
+            return "arbiter"
+        attempt = int(state.get("attempt", 0))
+        return [Send(f"expert__{tid}", {"candidate": draft, "trait_id": tid, "attempt": attempt})
+                for tid in trait_ids]
+
+    arbiter = Arbiter(ScoreAggregator(), trait_order=trait_ids)
+    builder.add_node("fan_out", fan_out_node)
+    builder.add_node("arbiter", arbiter)
+    for tid in trait_ids:
+        builder.add_node(f"expert__{tid}", expert)
+        builder.add_edge(f"expert__{tid}", "arbiter")
+    builder.add_edge("generate", "fan_out")
+    builder.add_conditional_edges("fan_out", dispatch)
+    builder.add_conditional_edges(
+        "arbiter", route, {PASS: "finalize", REWRITE: "rewrite", HUMAN: "human"}
+    )
+
+
 def build_graph(
     spec: dict[str, Any],
     generator: ChatModel,
@@ -100,13 +163,17 @@ def build_graph(
     max_attempts: int = MAX_REWRITE_ATTEMPTS,
     on_progress: ProgressHook | None = None,
     checkpointer: Any | None = None,
+    agent_mode: str | None = None,
 ) -> Any:
-    """编译一张可执行的状态图。返回对象支持 .invoke(state, config)。"""
+    """编译一张可执行的状态图。返回对象支持 .invoke(state, config)。
+
+    agent_mode：simple（默认，逐字节现行为）/ blackboard（8 专家写板 + 裁决者读板）。
+    """
+    mode = _resolve_agent_mode(agent_mode)
     generate = GenerateNode(spec, generator)
-    verify = VerifyNode(spec, judge, on_progress=on_progress)
 
     def route(state: GraphState) -> str:
-        """条件边：只返回目的地，不写数据。"""
+        """条件边：只返回目的地，不写数据。两种模式共用同一个闭包，路由一行不改。"""
         return decide(
             score=int(state.get("score", -1)),
             attempt=int(state.get("attempt", 0)),
@@ -116,19 +183,24 @@ def build_graph(
 
     builder = StateGraph(GraphState)
     builder.add_node("generate", generate)
-    builder.add_node("verify", verify)
     builder.add_node("rewrite", rewrite_node)
     builder.add_node("finalize", finalize_node)
     builder.add_node("human", human_node)
 
     builder.add_edge(START, "generate")
-    builder.add_edge("generate", "verify")
-    builder.add_conditional_edges(
-        "verify", route, {PASS: "finalize", REWRITE: "rewrite", HUMAN: "human"}
-    )
     builder.add_edge("rewrite", "generate")
     builder.add_edge("finalize", END)
     builder.add_edge("human", END)
+
+    if mode == AGENT_MODE_BLACKBOARD:
+        _wire_blackboard(builder, spec, judge, route, on_progress)
+    else:
+        verify = VerifyNode(spec, judge, on_progress=on_progress)
+        builder.add_node("verify", verify)
+        builder.add_edge("generate", "verify")
+        builder.add_conditional_edges(
+            "verify", route, {PASS: "finalize", REWRITE: "rewrite", HUMAN: "human"}
+        )
 
     # 没有 checkpointer 就没有地方存现场，interrupt 无从恢复 —— 所以总是给一个。
     return builder.compile(checkpointer=checkpointer or MemorySaver())

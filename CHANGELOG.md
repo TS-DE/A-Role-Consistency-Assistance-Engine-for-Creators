@@ -6,6 +6,7 @@
 
 | 版本 | 日期 | 主题 | 关键产物 |
 | --- | --- | --- | --- |
+| v0.9.0 | 2026-10-29 | 黑板化重构第 1、2 步（零行为变化） | `board.py`+`experts.py`+`arbiter.py`+builder `AGENT_MODE`（默认 simple）；8 专家 Send 并行写板实测 0.61–0.85× 基线（真并行，未用线程池回退）；`test_board` 5 用例含双模式七字段全等；聚合规则/规格/gold 零改动 |
 | v0.8.1 | 2026-10-28 | 答辩前冻结：看板自动发现留出结果 + 章节编号去重 + 指标口径统一 | `src/web/app.py` 留出结果按 mtime 发现 + radio 切换 + 口径行；docs/07 G 两节改 §十/§十一（含全库引用同步）；README/docs/07§六 主数 73.7%(flash/G/n=19) 与 94.1%(27b/F) 分仪器标注；agent_docs 讲稿同步（不入库）；**rule/anti/聚合/gold 零改动** |
 | v0.8.0 | 2026-10-28 | G01–G08 留出集（一次性实测并退役） | `data/golden/golden_holdout_g.json`（19 条，spec 0.4 盲写）；**14/19 = 73.7%（qwen3.8-flash）**；目标轴 G07 4/4 全对；5 条新分歧记入 docs/07 §十一 转 H 批 |
 | v0.7.1 | 2026-10-28 | watson_rapport 划界修订（修 F07-b 漏杀 + 守夜误杀） | spec 0.4：调侃/否定界 + 健康界两条可判定分界；两轮 E 回归终验 16/17（flash）；docs/01 四·补三、docs/07 §十 |
@@ -30,6 +31,69 @@
 | v0.1.0 | 2026-10-26 | 初始项目导入与版本化 | 一致性规格书、黄金测试集、人设卡、评测脚本与对比报告 |
 
 ---
+
+## v0.9.0 · 2026-10-29 · 黑板化重构（第 1、2 步）：8 专家写板 + 确定性裁决
+
+### 1. 原有缺陷
+
+- 8 轴判定是"单节点内部线程池"：结论只活在 `judge_case` 的一次函数调用里，
+  **没有共享的、可审计的证据面**——第 3 步的跨轴消解、逐轴耗时定位、失败归因都无处挂载
+  （动因与边界见 agent_docs/19 §一/§四；本轮只做它的第 1、2 步）。
+- 旧结构没有多 Agent 的演进位：加 ReAct、动态 few-shot 都只能继续往单节点里塞。
+
+### 2. 改进技术（全部零分数变化；分数路径一行未动）
+
+- `src/graph/board.py`：`BoardEntry` 契约（任务书 10 字段 + 3 个溯源字段，理由如下）——
+  `attempt`：operator.add 跨打回轮次累加，裁决者只读当前轮，否则旧稿命中重复计分（**分数会变的唯一雷，拆掉**）；
+  `ms`/`parse_error`：trace 与 verdicts 逐字节等形所需；parse_error 原样透传（None 不归一为 False）。
+  `GraphState.board: Annotated[list[BoardEntry], operator.add]`——并发写合并交给框架 reducer，不自加锁。
+- `src/graph/nodes/experts.py`：`TraitExpert` 薄包现有 `TraitEvaluator.judge_trait`（同一份判定代码，
+  防两份真相漂移）；任何异常/未知轴写 `failed` 条目，**永不冒泡中断整张图**；severity 取规格不取模型。
+- `src/graph/nodes/arbiter.py`：`Arbiter` 读当前轮板面 → 按规格轴序对齐 → **直接调用现有
+  `ScoreAggregator.score`**（`_decide`/`_claim_sentence` 一行未动）→ 写回与 `VerifyNode` 完全同形的
+  四字段。保守闸三条：任一 failed / 缺板 / 空板 → score=-1 + verify_incomplete（铁律 3）；
+  空草稿守卫与 VerifyNode 同形。落句去重升级/跨轴追加 = 第 3 步，本轮明确不做。
+- `src/graph/builder.py`：`agent_mode` 参数 + `AGENT_MODE` 环境变量（默认 `simple`=现行为逐字节；
+  未知取值显式报错，不静默回退）。blackboard 接线：`generate → fan_out --Send×8--> expert__轴 → arbiter → route`。
+  **`route`/`rewrite`/`finalize`/`human`/`decide` 一行未改**，条件边只是换了挂载点。
+  扇出闭包不写 trace（trace 通道无 reducer，并行写会炸），只 fan_out/arbiter 串行写。
+- trace 口径对齐：blackboard 的 verify `ms` = 最慢单轴（实测 wall 11.0/14.5s ≈ max 10.98/14.50s；
+  Σ 会把 cost_report 占比虚报 3 倍）；单轴明细全量留板。
+
+### 3. 对应代码位置
+
+- 新增：`src/graph/board.py`、`src/graph/nodes/experts.py`、`src/graph/nodes/arbiter.py`、
+  `tests/graph/test_board.py`
+- 修改：`src/graph/state.py`（board 字段 + reducer + new_state 初始化）、
+  `src/graph/builder.py`（`_resolve_agent_mode`/`_wire_blackboard`/`build_graph` 分支）
+- 产物：`reports/eq_simple.json`、`reports/eq_blackboard.json`、耗时实测见下
+
+### 4. 验证流程
+
+```bash
+python -m tests.graph.test_board                    # 新增 5 用例（任务书两条硬断言在内）
+…（其余 11 个离线模块逐个跑）
+python -m src.cli.tools.build_judge_yaml && git diff data/   # 必须为空
+# 耗时实测（真实 flash，stub 生成器定稿，2 候选 × 2 模式）+ 双模式 E 集各一次
+```
+
+实测输出：
+
+- **12 个离线模块全部 exit=0**（68 用例：原 63 + 新 5）。
+- 等价性（确定性证明在 stub）：`test_arbiter_equals_direct_aggregator_field_by_field`
+  （Arbiter 与直调 ScoreAggregator 的 score/violated/verdicts 逐字段相等）；
+  `test_modes_full_equivalence_on_score_fields`（pass/drift/hard 三场景双模式图的
+  score/verdicts/violated/verify_incomplete/final/needs_human/attempt 七字段全等）；
+  `test_eight_sends_merge_without_loss_or_duplication`（8 Send 合并不丢不重）；
+  `test_stale_rounds_are_not_scored`（跨轮板面隔离）；`test_expert_failure_...`（失败不中断图）。
+- **Send 并行性实测（任务书 §5 风险）**：blackboard wall 11.0s/14.5s vs simple 18.1s/17.1s
+  = **0.61×/0.85× 基线**，真并行，§5 的线程池回退方案未启用。
+- `build_judge_yaml` 重建后 `git diff data/` **空**（规格/gold/聚合零改动自证）。
+- **诚实记录**：按任务书 §6-2 跑的两条 `run_judge` 命令（AGENT_MODE=simple / blackboard）
+  diff 出 2 条（E03-a、E08-b，各 15/17）。归因：`run_judge` 根本不读 AGENT_MODE、不建图——
+  两次跑是**同一份代码**，差异纯为模型采样复跑非确定性（与 E03-a 在 v0.7.1 两轮间已翻转过
+  一次、`stability_run_01` 记录的 75% 自一致率同源）。**因此"逐条 diff 为空"在真模型双跑上
+  不可达，也不能作为重构等价性的依据；等价性依据是上面的 stub 全等用例 + 同码路径审计。**
 
 ## v0.8.1 · 2026-10-28 · 答辩前冻结：看板数据源 + 章节编号 + 指标口径
 

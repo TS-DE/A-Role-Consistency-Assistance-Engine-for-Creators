@@ -7,7 +7,10 @@
 
 from __future__ import annotations
 
-from typing import Any, TypedDict
+import operator
+from typing import Annotated, Any, TypedDict
+
+from src.graph.board import BoardEntry
 
 
 class GraphState(TypedDict, total=False):
@@ -29,6 +32,10 @@ class GraphState(TypedDict, total=False):
     violated: list[str]      # 命中的 pattern 摘要，供人读与回写
     verify_incomplete: bool  # 有 trait 调用失败：这次判定不可信，不许当成"通过"
 
+    # ── 黑板（AGENT_MODE=blackboard 时由 8 个专家并行写入，simple 模式恒为空）──
+    # operator.add：并行 append 由 reducer 确定性合并，跨打回轮次累加、按 attempt 字段分轮读取
+    board: Annotated[list[BoardEntry], operator.add]
+
     # ── 出口 ────────────────────────────────────────────
     final: str               # 最终交给创作者的文本
     needs_human: bool        # 走到人工裁决分支（打回用尽 / 校验未完成）
@@ -46,6 +53,7 @@ def new_state(user_input: str, character_id: str = "sherlock_holmes") -> GraphSt
         rewrite_notes=[],
         verdicts=[],
         score=-1,
+        board=[],
         violated=[],
         verify_incomplete=False,
         final="",
