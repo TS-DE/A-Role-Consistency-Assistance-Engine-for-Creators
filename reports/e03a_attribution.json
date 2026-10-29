@@ -1,0 +1,60 @@
+{
+  "id": "E03-a",
+  "gold": 2,
+  "method": "单候选 off×2/on×2 复跑：分离'合并口径'与'采样噪声'",
+  "runs": [
+    {
+      "merge": false,
+      "score": 2,
+      "violated": []
+    },
+    {
+      "merge": true,
+      "score": 0,
+      "violated": [
+        "[hard] it is enough - i shall name him in the morning. ← \"It is enough — I shall name him "
+      ]
+    },
+    {
+      "merge": false,
+      "score": 2,
+      "violated": []
+    },
+    {
+      "merge": true,
+      "score": 0,
+      "violated": [
+        "[hard] it is enough - i shall name him in the morning. ← \"It is enough — I shall name him "
+      ]
+    }
+  ],
+  "runs2_order_on_on_off_off": [
+    {
+      "merge": true,
+      "score": 0,
+      "board_hits": [
+        "?:[hard] pattern: 把无"
+      ]
+    },
+    {
+      "merge": true,
+      "score": 0,
+      "board_hits": [
+        "?:把无关细节、职业特征或外貌当作罪证*"
+      ]
+    },
+    {
+      "merge": false,
+      "score": 2,
+      "board_hits": []
+    },
+    {
+      "merge": false,
+      "score": 0,
+      "board_hits": [
+        "?:[hard] pattern: 把无"
+      ]
+    }
+  ],
+  "note": "第一轮 off,off,on,on 全相关；第二轮加测见 runs2"
+}
