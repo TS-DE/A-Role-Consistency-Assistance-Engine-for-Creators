@@ -25,7 +25,14 @@ if str(ROOT) not in sys.path:
 import streamlit as st
 from langgraph.types import Command
 
-from src.graph.builder import ABANDON, ACCEPT, EDIT_PREFIX, build_graph
+from src.graph.builder import (
+    ABANDON,
+    ACCEPT,
+    EDIT_PREFIX,
+    agent_mode_label,
+    build_graph,
+    current_agent_mode,
+)
 from src.graph.state import new_state
 from src.judge.chat_model import ChatModelError, build_generator_model, build_judge_model
 from src.judge.constants import MAX_REWRITE_ATTEMPTS, PROJECT_ROOT
@@ -325,8 +332,15 @@ def main() -> None:
         st.subheader("运行配置")
         env = EnvLoader()
         env.load()
+        # 模式与建图同源（current_agent_mode 就是 _resolve_agent_mode 的公开入口），
+        # 非法取值时 _resolve 显式抛错 → 显示错误并停止渲染，绝不让页面带着错模式跑。
+        try:
+            mode_line = f"判定模式 {agent_mode_label(current_agent_mode())}"
+        except ValueError as exc:
+            st.error(f"AGENT_MODE 配置错误，页面停在这里不渲染：{exc}")
+            st.stop()
         st.code(
-            f"生成 {env.get('LLM_MODEL', '?')}\n判定 {env.get('JUDGE_MODEL', '?')}",
+            f"生成 {env.get('LLM_MODEL', '?')}\n判定 {env.get('JUDGE_MODEL', '?')}\n{mode_line}",
             language="text",
         )
         st.caption("换模型等于换仪器，历史分数不能并排比较。")

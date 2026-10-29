@@ -40,6 +40,13 @@ from src.judge.evaluator import TraitEvaluator
 AGENT_MODE_SIMPLE = "simple"
 AGENT_MODE_BLACKBOARD = "blackboard"
 
+# 入口层（run_graph / web）展示用的统一文案：口径必须与 _resolve_agent_mode 同源，
+# 防止"页面显示 simple、图里跑 blackboard"这类两张皮。
+AGENT_MODE_LABELS = {
+    AGENT_MODE_SIMPLE: "simple（单节点并行直判）",
+    AGENT_MODE_BLACKBOARD: "blackboard（8 专家写板 + 裁决者）",
+}
+
 ProgressHook = Callable[[str, str, bool, str], None]
 
 # 人工裁决的三种回传值，由 CLI 通过 Command(resume=...) 送回来
@@ -114,6 +121,19 @@ def _resolve_agent_mode(agent_mode: str | None) -> str:
     return resolved
 
 
+def current_agent_mode(agent_mode: str | None = None) -> str:
+    """入口层（CLI/web）获取"当前生效模式"的唯一来源：与建图解析同源，杜绝两张皮。
+
+    异常场景：AGENT_MODE 取值非法时按硬约束显式抛 ValueError（不静默回退），
+    由调用方决定是打印中止（CLI）还是报错停渲染（web）。
+    """
+    return _resolve_agent_mode(agent_mode)
+
+
+def agent_mode_label(mode: str) -> str:
+    return AGENT_MODE_LABELS[mode]
+
+
 def _wire_blackboard(builder: StateGraph, spec: dict[str, Any], judge: ChatModel,
                      route: Callable[[GraphState], str],
                      on_progress: ProgressHook | None) -> None:
@@ -123,8 +143,10 @@ def _wire_blackboard(builder: StateGraph, spec: dict[str, Any], judge: ChatModel
     每个 TraitExpert 节点只往 board 追加自己的一条；聚合只在 Arbiter。
     """
     trait_ids = list(spec["_traits_by_id"])
+    # 进度回调传给专家：黑板路径里 judge_case 不被调用，逐轴勾选只能由专家自己发
+    # （judge_case 的 _emit 路径一字未动，simple 模式进度逐字节不变）。
     evaluator = TraitEvaluator(spec, judge, on_progress=on_progress)
-    expert = TraitExpert(spec, evaluator)   # 无状态实例，8 个节点名共用同一个 callable
+    expert = TraitExpert(spec, evaluator, on_progress=on_progress)
 
     def fan_out_node(state: GraphState) -> dict[str, Any]:
         """只记一条调度日志。trace 通道无 reducer，并行分支不许写它——所以日志记在扇出点。"""

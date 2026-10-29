@@ -6,6 +6,7 @@
 
 | 版本 | 日期 | 主题 | 关键产物 |
 | --- | --- | --- | --- |
+| v0.9.1 | 2026-10-29 | 演示就绪：黑板模式启用 + 进度回调 + 模式可见 + 温度接线 | `.env` 开黑面板（不入库）；专家逐轴进度（simple 输出逐字不变）；侧边栏模式行；LLM_/JUDGE_TEMPERATURE 死键接活（兜底 0.0）；D01-a 注入式 4 连跑证据 `reports/noise_floor_v0.9.1.json` |
 | v0.9.0 | 2026-10-29 | 黑板化重构第 1、2 步（零行为变化） | `board.py`+`experts.py`+`arbiter.py`+builder `AGENT_MODE`（默认 simple）；8 专家 Send 并行写板实测 0.61–0.85× 基线（真并行，未用线程池回退）；`test_board` 5 用例含双模式七字段全等；聚合规则/规格/gold 零改动 |
 | v0.8.1 | 2026-10-28 | 答辩前冻结：看板自动发现留出结果 + 章节编号去重 + 指标口径统一 | `src/web/app.py` 留出结果按 mtime 发现 + radio 切换 + 口径行；docs/07 G 两节改 §十/§十一（含全库引用同步）；README/docs/07§六 主数 73.7%(flash/G/n=19) 与 94.1%(27b/F) 分仪器标注；agent_docs 讲稿同步（不入库）；**rule/anti/聚合/gold 零改动** |
 | v0.8.0 | 2026-10-28 | G01–G08 留出集（一次性实测并退役） | `data/golden/golden_holdout_g.json`（19 条，spec 0.4 盲写）；**14/19 = 73.7%（qwen3.8-flash）**；目标轴 G07 4/4 全对；5 条新分歧记入 docs/07 §十一 转 H 批 |
@@ -31,6 +32,86 @@
 | v0.1.0 | 2026-10-26 | 初始项目导入与版本化 | 一致性规格书、黄金测试集、人设卡、评测脚本与对比报告 |
 
 ---
+
+## v0.9.1 · 2026-10-29 · 演示就绪：黑板默认启用、逐轴进度、模式可见、温度键接线
+
+本轮不动任何算分路径（agent_docs/20 四项任务）。
+
+### 1. 原有缺陷
+
+- 黑板代码在 v0.9.0 已就位但 `.env` 没有 `AGENT_MODE`，演示跑的仍是旧路径——"已建好"与"被使用"之间缺一个开关；
+  且 CLI/页面上没有任何地方显示当前模式，"改了 .env 没生效"这类乌龙无从发现。
+- 黑板模式逐轴进度全静默：`on_progress` 只在 `judge_case` 批处理路径触发，专家走 `judge_trait` 不经过它，
+  页面/终端会黑屏 30–60 秒。
+- **温度配置是假的**（2026-10-29 实测发现，推翻上轮"temp=0 复跑证据"方案的前提）：
+  `OpenAICompatChatModel` 构造没有 temperature 参数、请求体硬编码 0.0，
+  `_make()` 只把温度传给了 langchain 后端——`.env` 里 `LLM_TEMPERATURE=0.8`/`JUDGE_TEMPERATURE=0.0`
+  两个键**从未生效**，默认 urllib 后端下生成侧与判定侧实际温度一直是 0.0。
+  E 集在 0.0 下仍在 15/17↔16/17 浮动 → **浮动来自供应商侧非确定性，不是温度**。
+
+### 2. 改进技术
+
+- `.env` 增加 `AGENT_MODE=blackboard`（不入库）；`.env.example` 补带注释的同名条目 + 温度键"此前是死键"说明。
+- 模式显示与建图**同源**：`builder.current_agent_mode()` 就是 `_resolve_agent_mode` 的公开入口，
+  `agent_mode_label()` 出文案——run_graph 启动打印、web 侧边栏显示，都不自己读环境变量，杜绝两张皮；
+  非法取值 CLI 打印中止、web 报错停渲染（st.stop），绝不带错模式跑。
+- 逐轴进度（任务 2）：`TraitEvaluator.emit_progress` 公开转发（内部吞回调异常：进度炸不许拖累判定，
+  `test_progress_reports_failure_and_swallows_hook_errors` 锁死）+ `has_progress_hook()`；
+  `TraitExpert` 成功/失败/未知轴三处按轴回调，cand_id 用 `draft#<轮次>`（Send 的 payload 没有候选 id，
+  闭环一次一场景，这是仅有的稳定身份）；simple 路径（VerifyNode→judge_case→_emit）一字未动，
+  run_graph 的 simple 钩子仍是 `_fail_hook`，blackboard 才用逐轴勾选的 `_axis_hook`。
+- 温度接线（任务 4）：`OpenAICompatChatModel.__init__` 增 `temperature` 参数、请求体用实例值；
+  `_make()` 把温度传给两条后端；工厂 `_env_temperature()` 读 `LLM_TEMPERATURE`/`JUDGE_TEMPERATURE`，
+  兜底 `DEFAULT_TEMPERATURE=0.0`（常量入 constants.py）= **与接线前实际生效值一致，行为不变**；
+  留空按未配置处理，写了但不是数字显式报错（静默吞配置错误会重演"改了没生效"）。
+  注意：接线后生成侧**若 .env 声明 0.8 则变 0.8**（此前一直是死编码的 0.0）——这是"配置生效"的本来含义，
+  兜底不改默认输出分布，显式声明才改。
+- 等价性证据改用**噪声地板**法（agent_docs/_ab_probe2.py，注入式）：stub 生成器固定返回 dev 集
+  D01-a（gold=0，三句抒情），真判定模型跑闭环一轮 × 每模式 2 次；`max_attempts=1` 隔离重写循环变量，
+  挂起回 ABANDON（不让人工放行污染分数）。
+
+### 3. 对应代码位置
+
+- `src/graph/builder.py`：`AGENT_MODE_LABELS`/`current_agent_mode`/`agent_mode_label`；`_wire_blackboard` 传入 on_progress
+- `src/judge/evaluator.py`：`emit_progress`/`has_progress_hook`（`_emit` 与 judge_case 未动）
+- `src/graph/nodes/experts.py`：`__init__` 增 on_progress；`_report`（三处调用）
+- `src/judge/chat_model.py`：`OpenAICompatChatModel` temperature 参数；`_env_temperature`；两工厂
+- `src/judge/constants.py`：`DEFAULT_TEMPERATURE = 0.0`
+- `src/cli/serve/run_graph.py`：模式打印；`_axis_hook`（simple 仍 `_fail_hook`）
+- `src/web/app.py`：侧边栏模式行 + 非法取值停渲染
+- `tests/graph/test_board.py`：+2 进度用例；`tests/judge/test_chat_model.py`：新建 3 用例
+- 产物：`reports/noise_floor_v0.9.1.json`、`reports/traces/v091_blackboard_demo.json`
+
+### 4. 验证流程
+
+```bash
+python -m tests.graph.test_board            # 7 用例（+2 进度）
+python -m tests.judge.test_chat_model       # 3 用例（温度接线，离线录制请求体）
+…（13 个离线模块全部 exit=0）
+AGENT_MODE=simple python -m tests.graph.test_builder        # exit=0
+AGENT_MODE=blackboard python -m tests.graph.test_builder    # exit=0
+AGENT_MODE=typo python -m tests.graph.test_builder          # exit=1（单测不依赖环境变量、坏值必须拦）
+python -m src.cli.serve.run_graph           # 黑屏问题解决：逐轴 8 行进度 + 模式打印 + trace 含 fan_out
+LLM_TEMPERATURE=0.9 真调一次生成 → 请求体 temperature=0.9（PASS，随后恢复）
+python agent_docs/_ab_probe2.py ×4          # 噪声地板：simple×2 + blackboard×2
+streamlit AppTest                           # 侧边栏渲染出模式行，无 exception
+python -m src.cli.tools.build_judge_yaml && git diff data/  # 空（规格未动）
+```
+
+**噪声地板实测**（D01-a，judge=qwen3.8-flash，max_attempts=1）：
+
+| mode | score | attempt | n_violated | verify_ms | wall_ms | 节点序列 |
+|---|---|---|---|---|---|---|
+| simple#1 | 0 | 1 | 9 | 22581 | 22587 | generate→verify→human |
+| simple#2 | 0 | 1 | 9 | 21530 | 21539 | generate→verify→human |
+| blackboard#1 | 0 | 1 | 9 | 19190 | 19207 | generate→**fan_out**→verify→human |
+| blackboard#2 | 0 | 1 | 9 | 19279 | 19291 | generate→**fan_out**→verify→human |
+
+判定标准（任务书 §4B）：四次主指标（score/attempt/n_violated）**逐条相同**，跨模式差异为零 →
+证据成立，可写"双模式逐条一致"。如实记录两处噪音：① blackboard 的第 6 行证据（"I am here for you"
+归入 voice_register 的 pattern 标签）两次跑略有出入（闲聊式寒暄 vs 宣誓大男主腔），引文本体相同——
+同模式内的采样噪音，即地板本身；② blackboard 节点序列多一条 `fan_out`、verify 条目名不变（Arbiter
+刻意保持与 simple 同形，下游零感知）——预期差异，不是 bug，看图时别误判"没走裁决者"。
 
 ## v0.9.0 · 2026-10-29 · 黑板化重构（第 1、2 步）：8 专家写板 + 确定性裁决
 

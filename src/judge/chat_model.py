@@ -17,6 +17,7 @@ from src.judge.constants import (
     BACKOFF_BASE,
     BACKOFF_CAP,
     DEFAULT_RETRIES,
+    DEFAULT_TEMPERATURE,
     DEFAULT_TIMEOUT,
     PREFLIGHT_PROMPT,
 )
@@ -55,8 +56,13 @@ class OpenAICompatChatModel(ChatModel):
         api_key: str | None = None,
         timeout: int = DEFAULT_TIMEOUT,
         retries: int = DEFAULT_RETRIES,
+        temperature: float = DEFAULT_TEMPERATURE,
     ) -> None:
         self._model = model
+        # 2026-10-29 实测修正：此前请求体把 temperature 硬编码 0.0，本类没有该参数，
+        # LLM_TEMPERATURE/JUDGE_TEMPERATURE 两个 env 键从未生效（"死键"）。现在接上，
+        # 兜底默认仍为 0.0 —— 与接线前的实际行为一致，不改变既有输出分布。
+        self._temperature = temperature
         self._base_url = (
             base_url
             or EnvLoader.get("JUDGE_BASE_URL", "LLM_BASE_URL")
@@ -77,7 +83,7 @@ class OpenAICompatChatModel(ChatModel):
         payload: dict[str, Any] = {
             "model": self._model,
             "messages": messages,
-            "temperature": 0.0,
+            "temperature": self._temperature,
         }
         if self._json_mode:
             payload["response_format"] = {"type": "json_object"}
@@ -121,6 +127,20 @@ def _backend() -> str:
     return (EnvLoader.get("MODEL_BACKEND") or "urllib").lower()
 
 
+def _env_temperature(name: str) -> float:
+    """从 env 读采样温度。此前 LLM_/JUDGE_TEMPERATURE 两键从未生效（请求体硬编码 0.0），
+    2026-10-29 接线后生效；未配置/空串一律兜底 DEFAULT_TEMPERATURE=0.0（与旧实际行为一致）。
+    配置了但不是数字 → 显式报错，不静默兜底：静默吞配置错误会让"改了没生效"重演一次。
+    """
+    raw = EnvLoader.get(name)
+    if raw is None or not raw.strip():
+        return DEFAULT_TEMPERATURE
+    try:
+        return float(raw)
+    except ValueError as exc:
+        raise ChatModelError(f"{name} 不是合法数字：{raw!r}（留空则用默认 {DEFAULT_TEMPERATURE}）") from exc
+
+
 def _make(model: str, base_url: str | None, api_key: str | None, temperature: float) -> ChatModel:
     if _backend() == "langchain":
         # 延迟 import：避免 chat_model ←→ langchain_model 循环依赖
@@ -130,7 +150,8 @@ def _make(model: str, base_url: str | None, api_key: str | None, temperature: fl
             model, base_url=base_url, api_key=api_key, temperature=temperature
         )
     return OpenAICompatChatModel(
-        model, base_url=base_url, api_key=api_key, timeout=DEFAULT_TIMEOUT, retries=DEFAULT_RETRIES
+        model, base_url=base_url, api_key=api_key, timeout=DEFAULT_TIMEOUT,
+        retries=DEFAULT_RETRIES, temperature=temperature,
     )
 
 
@@ -143,7 +164,9 @@ def build_generator_model() -> ChatModel:
         model,
         EnvLoader.get("LLM_BASE_URL", "JUDGE_BASE_URL"),
         EnvLoader.get("LLM_API_KEY", "JUDGE_API_KEY"),
-        temperature=0.8,
+        # 兜底从 0.8 改为 0.0：接线前的实际生效值一直是 0.0（请求体硬编码），
+        # 兜底必须等于旧实际值才算"行为不变"；想要 0.8 由 .env 显式声明。
+        temperature=_env_temperature("LLM_TEMPERATURE"),
     )
 
 
@@ -156,5 +179,5 @@ def build_judge_model() -> ChatModel:
         model,
         EnvLoader.get("JUDGE_BASE_URL", "LLM_BASE_URL"),
         EnvLoader.get("JUDGE_API_KEY", "LLM_API_KEY"),
-        temperature=0.0,
+        temperature=_env_temperature("JUDGE_TEMPERATURE"),
     )

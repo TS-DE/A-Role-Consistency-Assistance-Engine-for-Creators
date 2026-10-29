@@ -20,7 +20,15 @@ from pathlib import Path
 
 from langgraph.types import Command
 
-from src.graph.builder import ABANDON, ACCEPT, EDIT_PREFIX, build_graph
+from src.graph.builder import (
+    ABANDON,
+    ACCEPT,
+    AGENT_MODE_BLACKBOARD,
+    EDIT_PREFIX,
+    agent_mode_label,
+    build_graph,
+    current_agent_mode,
+)
 from src.graph.state import GraphState, new_state
 from src.judge.chat_model import ChatModelError, build_generator_model, build_judge_model
 from src.judge.constants import MAX_REWRITE_ATTEMPTS
@@ -32,6 +40,17 @@ DEFAULT_SCENE = "华生说他今晚还想再去现场守一夜，让福尔摩斯
 
 def _fail_hook(_cand: str, trait: str, ok: bool, message: str) -> None:
     if not ok:
+        print(f"      ! {trait} 失败：{message[:70]}")
+
+
+def _axis_hook(_cand: str, trait: str, ok: bool, message: str) -> None:
+    """黑板模式的逐轴勾选：8 条规则各打一行，演示时能亲眼看到"专家逐个交卷"。
+
+    只在 blackboard 模式启用——simple 沿用 _fail_hook，终端输出与改造前逐字一致。
+    """
+    if ok:
+        print(f"      · {trait} 完成")
+    else:
         print(f"      ! {trait} 失败：{message[:70]}")
 
 
@@ -87,15 +106,23 @@ def main(argv: list[str] | None = None) -> int:
     scene = args.scene
 
     EnvLoader().load()
+    try:
+        # 模式必须在此处解析一次并复用：打印的、建图用的、选钩子的，同一个结果
+        mode = current_agent_mode()
+    except ValueError as exc:
+        print(f"配置错误，中止：{exc}")
+        return 2
     spec = SpecLoader().load()
     generator, judge = build_generator_model(), build_judge_model()
     print(f"场景：{scene}")
     print(f"生成模型：{generator.model}　判定模型：{judge.model}")
+    print(f"判定模式：{agent_mode_label(mode)}")
 
     graph = build_graph(
         spec, generator, judge,
         max_attempts=MAX_REWRITE_ATTEMPTS,
-        on_progress=_fail_hook,
+        on_progress=_axis_hook if mode == AGENT_MODE_BLACKBOARD else _fail_hook,
+        agent_mode=mode,
     )
     config = {"configurable": {"thread_id": f"roleguard-{int(time.time())}"}}
 
