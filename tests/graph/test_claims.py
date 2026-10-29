@@ -206,6 +206,57 @@ def test_merge_off_trace_shape_is_v091_exactly() -> None:
 
 
 
+# ── 裁决确认单 · 第 1 项：机制等价性（固定 board 输入，不调模型，确定性）────────
+def test_merge_score_equivalence_on_four_attribution_shapes() -> None:
+    """用户裁决要求（2026-10-29）：四类归因形态的固定输入上，merge on/off 的 score 必须完全相同。
+    相等 ⟹ 合并层对计分语义是"归并已有证据"、不制造新证据 ⟹ E03-a 的 2→0 与它无关。
+    有任何不等即停手（本用例断言即闸，CI 意义上永久生效）。"""
+    s1, s2 = "You will not last the night, Watson.", "Fetch my coat."
+    two = "You will not last the night, Watson. Fetch my coat. The game is afoot."
+
+    def board(*hits_by_trait: tuple) -> list[tb.BoardEntry]:
+        """按 (trait, [(quote, pattern, hit_severity)]) 组固定板面；轴序 aa/bb 都写满防缺板闸。"""
+        seen = {t for t, _ in hits_by_trait}
+        entries = [tb.BoardEntry(trait=t, severity="soft",
+                                 hits=[{"pattern": p, "quote": q, "severity": sv} for q, p, sv in hs],
+                                 invalid=[], ambiguity=[], failed="",
+                                 prompt_chars=5, reply_chars=5, parse_error=None, ms=1, attempt=1)
+                   for t, hs in hits_by_trait]
+        for rest in ({"aa", "bb"} - seen):
+            entries.append(_clean_entry(rest))
+        return entries
+
+    shapes = {
+        "a 同句跨轴 hard+soft": board(("aa", [(tb.DRAFT, "P1", "soft")]),
+                                       ("bb", [(tb.DRAFT, "P2", "hard")])),
+        "b 同句同轴双 pattern": board(("aa", [(tb.DRAFT, "P1", "soft"), (tb.DRAFT, "P2", "soft")])),
+        "c 两句各自单轴命中":   board(("aa", [(s1, "P1", "soft")]),
+                                       ("bb", [(s2, "P2", "soft")])),
+        "d 单句单轴单 pattern": board(("aa", [(tb.DRAFT, "P1", "soft")])),
+    }
+    for name, entries in shapes.items():
+        draft = two if name.startswith("c") else tb.DRAFT
+        off = _arbiter(entries, draft, merge=False)["score"]
+        on = _arbiter(entries, draft, merge=True)["score"]
+        assert off == on, f"形态「{name}」两臂分数不等（off={off} on={on}）——按裁决单立即停手"
+
+
+def test_same_axis_multi_sentence_is_documented_divergence() -> None:
+    """单独立基线的"有意分歧"（不混进上面四类等价断言）：同一轴命中两句——
+    旧口径按轴数=1 判漂移，新口径按落句数=2 判 OOC。这是方案 A 的设计本身
+    （一句一处、≥2 处即 OOC），不是归因修复的副作用；test_claims 桶级用例已锁同一事实。"""
+    s1, s2 = "You will not last the night, Watson.", "Fetch my coat."
+    two = "You will not last the night, Watson. Fetch my coat. The game is afoot."
+    entries = [tb.BoardEntry(trait="aa", severity="soft",
+                             hits=[{"pattern": "P1", "quote": s1, "severity": "soft"},
+                                   {"pattern": "P2", "quote": s2, "severity": "soft"}],
+                             invalid=[], ambiguity=[], failed="",
+                             prompt_chars=5, reply_chars=5, parse_error=None, ms=1, attempt=1),
+               _clean_entry("bb")]
+    assert _arbiter(entries, two, merge=False)["score"] == 1
+    assert _arbiter(entries, two, merge=True)["score"] == 0, "有意口径变化：两句两处 → OOC"
+
+
 def main() -> int:
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
     for t in tests:
