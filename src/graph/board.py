@@ -26,7 +26,8 @@ class BoardEntry(TypedDict):
     failed: str              # 调用失败原因；空串=成功。异常写这里，绝不让它冒泡中断整张图
     prompt_chars: int        # 成本口径：实测字符数（tokens 只能估算）
     reply_chars: int
-    parse_error: bool        # 模型返回解析失败（≠调用失败：补不上分但判定"跑完了"，与 judge_trait 字段对齐）
+    parse_error: Any         # 原样透传 judge_trait 的 parse_error（成功=None）：不许 bool 归一，
+                             # 否则 verdicts 与 simple 模式差一个 None/False，等价性断言会炸
     ms: int                  # 单轴耗时。verify 的 trace 聚合与 19 号方案 §七"定位慢轴"都要它
     attempt: int             # 本条属于第几稿。黑板跨打回轮次是累加的（operator.add），
                              # 裁决者必须只取当前 attempt，否则上一稿的命中会被重复计分——那是分数变化，本轮禁止

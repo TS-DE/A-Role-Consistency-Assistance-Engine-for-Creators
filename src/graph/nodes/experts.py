@@ -60,7 +60,7 @@ class TraitExpert:
             failed="",
             prompt_chars=int(result.get("prompt_chars", 0)),
             reply_chars=int(result.get("reply_chars", 0)),
-            parse_error=bool(result.get("parse_error")),
+            parse_error=result.get("parse_error"),
             ms=self._ms(started),
             attempt=attempt,
         )]}
@@ -78,7 +78,7 @@ class TraitExpert:
             hits=[], invalid=[], ambiguity=[],
             failed=reason,
             prompt_chars=0, reply_chars=0,
-            parse_error=False,
+            parse_error=None,
             ms=self._ms(started),
             attempt=attempt,
         )
