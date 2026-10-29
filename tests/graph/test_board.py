@@ -73,12 +73,18 @@ def _entry(trait: str, severity: str, hits: list[dict], attempt: int = 1) -> Boa
                       parse_error=False, ms=1, attempt=attempt)
 
 
-def _arbiter_graph(trait_order: list[str] | None = None) -> object:
+def _arbiter_graph(trait_order: list[str] | None = None,
+                   merge: bool = False) -> object:
     """单节点图直调 Arbiter。trait_order 默认全 8 轴——缺板闸会拒绝只写一半的板，
-    等价性用例只放两条轴时要把期望轴序收窄，否则测的是"缺板"而不是"聚合"。"""
+    等价性用例只放两条轴时要把期望轴序收窄，否则测的是"缺板"而不是"聚合"。
+
+    merge 默认 off：这些老用例锚定的是 v0.9.1 逐字节基线；落句合并的行为变化
+    由第 21 号用例组（_arbiter_run / test_claims）显式开 merge 来测。
+    """
     builder = StateGraph(GraphState)
     builder.add_node("arbiter", Arbiter(ScoreAggregator(),
-                                         trait_order=trait_order or TRAIT_IDS))
+                                         trait_order=trait_order or TRAIT_IDS,
+                                         merge_claims_enabled=merge))
     builder.add_edge(START, "arbiter")
     builder.add_edge("arbiter", END)
     return builder.compile()
@@ -145,8 +151,10 @@ def _run_to_end(graph: object, tag: str) -> dict:
 
 
 def test_modes_full_equivalence_on_score_fields() -> None:
-    """同一批 stub 场景：simple 与 blackboard 的四个校验字段 + 出口字段全等。
+    """同一批 stub 场景：simple 与 blackboard(merge=off) 的四个校验字段 + 出口字段全等。
 
+    merge=off 是 v0.9.1 的逐字节基线，所以连 violated 的字面格式都要相等；
+    merge=on 的输出变化是第 21 号任务书的**有意行为变化**，由下面的归因不变性用例单独管。
     三档都过一遍：pass（一稿 2 分）、drift（恒 1 分打到打满转人工）、hard（0 分）。
     """
     for tag in ("pass", "drift", "hard"):
@@ -154,13 +162,15 @@ def test_modes_full_equivalence_on_score_fields() -> None:
         out_s = _run_to_end(g_s, f"eqs-{tag}")
 
         g_b = build_graph(SPEC_HARD, _clone(tag), _clone(tag), max_attempts=2,
-                          agent_mode="blackboard")
+                          agent_mode="blackboard", arbiter_merge=False)
         out_b = _run_to_end(g_b, f"eqb-{tag}")
 
         for field in ("score", "verdicts", "violated", "verify_incomplete",
                       "final", "needs_human", "attempt"):
             assert out_s[field] == out_b[field], f"{tag} 场景 {field} 不一致"
         assert tag != "pass" or out_s["score"] == 2, "pass 场景本身要对（防止两边同错）"
+        # claims 通道由 new_state 初始化为空表（惰性），merge=off 的 Arbiter 绝不写它
+        assert out_b["claims"] == [], "merge=off 裁决层不许碰 claims"
 
 
 # ── 分轮板面：打回后的第 2 轮不许把第 1 轮的命中算进来 ────

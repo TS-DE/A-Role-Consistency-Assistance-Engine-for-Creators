@@ -121,6 +121,28 @@ def _resolve_agent_mode(agent_mode: str | None) -> str:
     return resolved
 
 
+# 落句级统一裁决开关（agent_docs/21）：on=先合并 claims 再算分（默认，.env 已切 blackboard）；
+# off=逐字节回 v0.9.1（A/B 基线与故障回退位）。与 AGENT_MODE 同款纪律：坏值显式报错不静默。
+MERGE_ON_VALUES = ("on", "1", "true")
+MERGE_OFF_VALUES = ("off", "0", "false")
+
+
+def _resolve_arbiter_merge(arbiter_merge: bool | None) -> bool:
+    if arbiter_merge is not None:
+        return arbiter_merge
+    raw = (EnvLoader.get("ARBITER_MERGE", default="on") or "on").strip().lower()
+    if raw in MERGE_ON_VALUES:
+        return True
+    if raw in MERGE_OFF_VALUES:
+        return False
+    raise ValueError(f"未知 ARBITER_MERGE：{raw}（可用：on / off）")
+
+
+def current_arbiter_merge(arbiter_merge: bool | None = None) -> bool:
+    """入口层获取"落句裁决是否生效"的唯一来源（与建图同源，防两张皮）。"""
+    return _resolve_arbiter_merge(arbiter_merge)
+
+
 def current_agent_mode(agent_mode: str | None = None) -> str:
     """入口层（CLI/web）获取"当前生效模式"的唯一来源：与建图解析同源，杜绝两张皮。
 
@@ -136,7 +158,8 @@ def agent_mode_label(mode: str) -> str:
 
 def _wire_blackboard(builder: StateGraph, spec: dict[str, Any], judge: ChatModel,
                      route: Callable[[GraphState], str],
-                     on_progress: ProgressHook | None) -> None:
+                     on_progress: ProgressHook | None,
+                     arbiter_merge: bool) -> None:
     """黑板接线：generate → fan_out --Send×N--> expert__轴 → arbiter → route。
 
     共享一个 TraitEvaluator 实例（连续失败计数等内部状态本就应全局共享），
@@ -164,7 +187,7 @@ def _wire_blackboard(builder: StateGraph, spec: dict[str, Any], judge: ChatModel
         return [Send(f"expert__{tid}", {"candidate": draft, "trait_id": tid, "attempt": attempt})
                 for tid in trait_ids]
 
-    arbiter = Arbiter(ScoreAggregator(), trait_order=trait_ids)
+    arbiter = Arbiter(ScoreAggregator(), trait_order=trait_ids, merge_claims_enabled=arbiter_merge)
     builder.add_node("fan_out", fan_out_node)
     builder.add_node("arbiter", arbiter)
     for tid in trait_ids:
@@ -186,12 +209,16 @@ def build_graph(
     on_progress: ProgressHook | None = None,
     checkpointer: Any | None = None,
     agent_mode: str | None = None,
+    arbiter_merge: bool | None = None,
 ) -> Any:
     """编译一张可执行的状态图。返回对象支持 .invoke(state, config)。
 
     agent_mode：simple（默认，逐字节现行为）/ blackboard（8 专家写板 + 裁决者读板）。
+    arbiter_merge：仅 blackboard 有意义——on=落句级统一裁决（默认）/ off=逐字节 v0.9.1。
+      simple 模式同样解析校验 env 取值：坏配置不许"等到切模式才炸"。
     """
     mode = _resolve_agent_mode(agent_mode)
+    merge = _resolve_arbiter_merge(arbiter_merge)
     generate = GenerateNode(spec, generator)
 
     def route(state: GraphState) -> str:
@@ -215,7 +242,7 @@ def build_graph(
     builder.add_edge("human", END)
 
     if mode == AGENT_MODE_BLACKBOARD:
-        _wire_blackboard(builder, spec, judge, route, on_progress)
+        _wire_blackboard(builder, spec, judge, route, on_progress, merge)
     else:
         verify = VerifyNode(spec, judge, on_progress=on_progress)
         builder.add_node("verify", verify)

@@ -116,7 +116,16 @@ python -m src.cli.serve.run_graph --json-out reports/traces/run01.json   # 命�
 python -m src.mcp_server.server --selftest                          # MCP 自检（不花钱）
 ```
 
-### 5.3 自测（全部不联网、不花钱）
+### 5.3 判定模式与回退开关（`.env`）
+
+| 键 | 取值 | 含义 |
+|---|---|---|
+| `AGENT_MODE` | `simple` / `blackboard`（当前默认） | simple=单节点 8 轴并发直判（旧路径）；blackboard=8 专家写板 + 裁决者读板 |
+| `ARBITER_MERGE` | `on`（当前默认）/ `off` | on=落句级统一裁决：一句最多贡献一处命中，分数不随 pattern/轴 的归因摇摆；**off=逐字节回退 v0.9.1**（A/B 基线与故障回退位） |
+
+两个键的未知取值都会**显式报错中止**，不静默回退——"以为开了其实没开"是最难查的 bug。
+
+### 5.4 自测（全部不联网、不花钱）
 
 ```bash
 python -m tests.judge.test_aggregator
@@ -182,6 +191,7 @@ python -m tests.cli.test_cost_report
 | 生成质量无自动化指标 | 方案与打分表已备（`docs/10`），数据待人工填 |
 | `src/web/app.py` 342 行 | 超出 300 行上限，待结构批次拆分 |
 | 单供应商 | `ChatModel` 可插拔，加本地 Ollama 实现即可降级 |
+| E 集含不稳定样本 | E03-a 同一模式下多次运行会给出 2 或 0（8 次复跑实证，见 CHANGELOG v0.10.0）；此类样本**不得作单次验收锚点**，引用必须注明多跑分布。待办：multi-run 产"可信锚点清单" |
 
 ## 10. 文档索引
 
@@ -199,4 +209,4 @@ python -m tests.cli.test_cost_report
 
 ## 11. 版本
 
-当前 `v0.8.1`。变更历史见 `CHANGELOG.md`（每版四段：原有缺陷 → 改进技术 → 代码位置 → 验证流程）。
+当前 `v0.10.0`。变更历史见 `CHANGELOG.md`（每版四段：原有缺陷 → 改进技术 → 代码位置 → 验证流程）。

@@ -11,6 +11,7 @@ import operator
 from typing import Annotated, Any, TypedDict
 
 from src.graph.board import BoardEntry
+from src.graph.claims import Claim
 
 
 class GraphState(TypedDict, total=False):
@@ -35,6 +36,10 @@ class GraphState(TypedDict, total=False):
     # ── 黑板（AGENT_MODE=blackboard 时由 8 个专家并行写入，simple 模式恒为空）──
     # operator.add：并行 append 由 reducer 确定性合并，跨打回轮次累加、按 attempt 字段分轮读取
     board: Annotated[list[BoardEntry], operator.add]
+    # 落句级统一裁决（ARBITER_MERGE=on 时由 Arbiter 写入）。
+    # 覆盖通道、不加 reducer：黑板跨轮累加是"证据的堆积"，裁决却必须是"本轮的整判决"——
+    # 若也累加，上一稿的落句会混进这一稿的 violated/计数里（分数路径的经典重复计分雷）。
+    claims: list[Claim]
 
     # ── 出口 ────────────────────────────────────────────
     final: str               # 最终交给创作者的文本
@@ -54,6 +59,7 @@ def new_state(user_input: str, character_id: str = "sherlock_holmes") -> GraphSt
         verdicts=[],
         score=-1,
         board=[],
+        claims=[],
         violated=[],
         verify_incomplete=False,
         final="",

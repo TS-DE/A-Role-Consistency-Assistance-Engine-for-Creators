@@ -6,6 +6,7 @@
 
 | 版本 | 日期 | 主题 | 关键产物 |
 | --- | --- | --- | --- |
+| v0.10.0 | 2026-10-29 | 裁决增强：落句级统一裁决（方案 A） | `claims.py` 合并层 + `ARBITER_MERGE` 开关（off 逐字节回 v0.9.1）；归因 4 连跑 score/n_claims 全同；E 集走图 A/B 16/17↔16/17，唯一"变远"样本经 8 次复跑归因为模型双峰；README 增开关文档与不稳定样本限制 |
 | v0.9.1 | 2026-10-29 | 演示就绪：黑板模式启用 + 进度回调 + 模式可见 + 温度接线 | `.env` 开黑面板（不入库）；专家逐轴进度（simple 输出逐字不变）；侧边栏模式行；LLM_/JUDGE_TEMPERATURE 死键接活（兜底 0.0）；D01-a 注入式 4 连跑证据 `reports/noise_floor_v0.9.1.json` |
 | v0.9.0 | 2026-10-29 | 黑板化重构第 1、2 步（零行为变化） | `board.py`+`experts.py`+`arbiter.py`+builder `AGENT_MODE`（默认 simple）；8 专家 Send 并行写板实测 0.61–0.85× 基线（真并行，未用线程池回退）；`test_board` 5 用例含双模式七字段全等；聚合规则/规格/gold 零改动 |
 | v0.8.1 | 2026-10-28 | 答辩前冻结：看板自动发现留出结果 + 章节编号去重 + 指标口径统一 | `src/web/app.py` 留出结果按 mtime 发现 + radio 切换 + 口径行；docs/07 G 两节改 §十/§十一（含全库引用同步）；README/docs/07§六 主数 73.7%(flash/G/n=19) 与 94.1%(27b/F) 分仪器标注；agent_docs 讲稿同步（不入库）；**rule/anti/聚合/gold 零改动** |
@@ -32,6 +33,71 @@
 | v0.1.0 | 2026-10-26 | 初始项目导入与版本化 | 一致性规格书、黄金测试集、人设卡、评测脚本与对比报告 |
 
 ---
+
+## v0.10.0 · 2026-10-29 · 裁决增强：落句级统一裁决，分数对归因噪声免疫（方案 A）
+
+本轮**有意改变聚合输出**（分数不再随归因摇摆），逐条量化见 §4。判定/取证/路由/阈值零改动。
+
+### 1. 原有缺陷
+
+- 归因摇摆直接进分数：2026-10-29 实测同一句 `I am here for you...` 4 次运行里 1 次判"大段抒情"、
+  3 次判"大男主腔"；且旧聚合 soft 计数按"落句去重后的**不同轴数**"（`_decide` 的第二参数是
+  `len(soft_by_trait)`），一句的轴归属在 A/B 间一换，不同轴数就变，分数跟着变。
+- 跨轴重叠隐没在去重里：同一句被几轴几个 pattern 共同命中，旧结构算完就丢，没有审计面。
+- `violated` 一句重复多行且行行 pattern 不同，人读困难（D01-a 实测 9 行）。
+- **价值边界照抄方案书**：本轮不提升召回（G06-a 漏杀留给第 4/5 步 exemplar/ReAct），
+  不修硬规则误触发（G08-a 要改 prompt 边界）。
+
+### 2. 改进技术
+
+- `src/graph/claims.py`（新）：`merge_claims` 按 `QuoteValidator.sentence_of` 落句分桶
+  （与聚合器同一套定位，**只按落句合并**，禁 pattern 编号/字符串相似度模糊匹配）；
+  桶内 severity 取最高（hit 级优先的取法与 `ScoreAggregator` 逐字一致）、traits/patterns/quotes
+  去重收集为审计面、occurrences=命中条目数；**定位不到的引文逐条成桶**（宁可多算不误并）。
+- `claims_to_projection`：每桶投成一条带唯一合成 trait 键的记录喂**现有** `score()`——
+  等价性论证写在函数 docstring：`_decide` 只消费两个标量（hard 存在性、不同键计数），
+  投影后键数=soft 桶数、hard 桶必落 hard_hits、桶间句子互异故 `_claim_sentence` 不互吞。
+  **ScoreAggregator 一行未改，`_decide` 未复制**（单一真相来源）。
+- `Arbiter`：`merge_claims_enabled` 双路径。on=先合并再算分，violated 换一句一行的
+  `[severity] sentence ← "quote"（N 轴 / M pattern）`，trace 追加 `n_claims/n_cross_axis/n_multi_pattern`，
+  写 `GraphState.claims`；**off=连 trace 键集合与 claims 通道都逐字节回 v0.9.1**（A/B 基线要形状也是旧的）。
+  保守闸（failed/缺板/空板）两档同闸；verdicts 两档都保留逐轴原始形状（审计面不掺合）。
+- `builder`：`ARBITER_MERGE=on|off` 解析链与 AGENT_MODE 同纪律——显式参数>env>默认 on，
+  坏值显式报错（simple 模式也校验，坏配置不许等切模式才炸）。
+- 用户裁决补充（合并前三项）：新增 stub 机制等价性闸——四类归因形态
+  （a 同句跨轴 hard+soft / b 同句同轴双 pattern / c 两句各单轴 / d 单句单轴单 pattern）
+  固定板面上断言两臂 score 完全相同，**永久生效于 CI**；"同轴两句"的口径分歧单独钉为
+  `test_same_axis_multi_sentence_is_documented_divergence`（方案 A 设计本身：一句一处，
+  ≥2 处即 OOC——旧口径同轴多句不升级正是归因免疫要拆的东西）。
+
+### 3. 对应代码位置
+
+- 新增：`src/graph/claims.py`、`tests/graph/test_claims.py`（10 用例）
+- 修改：`src/graph/nodes/arbiter.py`（双路径）、`src/graph/state.py`（claims 覆盖通道——
+  证据跨轮累加、判决本轮整写，不许加 reducer）、`src/graph/builder.py`（开关）、
+  `src/cli/serve/run_graph.py`（启动行显示开关，与建图同源）、`.env.example`、`README.md`
+  （§5.3 开关文档 + §9 不稳定样本限制）
+- 产物：`reports/attribution_v0.10.0.jsonl`、`reports/e_claims_ab_v0.10.0.json`、`reports/e03a_attribution.json`
+
+### 4. 验证流程（实际输出）
+
+- 离线 14 模块全 exit=0（76 用例：原 63 + v0.9.1 新增 5 + 本轮 8；含双模式 builder、
+  `ARBITER_MERGE=typo` 显式拦截）。`build_judge_yaml` 后 `git diff data/` 空。
+- **归因不变性 4 连跑**（D01-a 注入，blackboard+on，真 flash）：score=0、n_claims=3、n_violated=3
+  **四次完全相同**；而桶内归因 wildly 摇摆（`let it all out.` 桶 occ 2soft→2hard→1hard→3hard）——
+  改前 9 行清单+pattern 摇摆，改后 3 行一句一行、分数钉死。
+- **E 集走图 A/B**（17 候选 × {off,on}，注入式 max_attempts=1；run_judge 零引用 arbiter/build_graph，
+  grep 实证后其对照命令未执行——它测不到合并层，方案书 §4.3 同判）：**两臂均 16/17**，变化 2 条：
+  - `E06-c` off=1 → on=2（**变近** gold=2）；
+  - `E03-a` off=2 → on=0（**变远** gold=2）→ 按方案书停手，经用户裁决补三项后合并。
+- **E03-a 归因（8 次复跑，两轮）**：机制等价性四形态两臂全等（stub 确定性）；真模型复跑
+  **merge=off 臂同样产出过 0 分**（R1 off×2=2,2；R2 on,on=0,0 + off×2=2,**0**）——
+  同误判（evidence_first 硬规则对"点名"句的误触发）在两臂都可复现，**单次 2→0 不可归因于合并**。
+  如实记录：该样本 on 臂 4/4 出 hit、off 臂 1/4 出 hit，残余不对称随机解释 p≈7%，
+  不足以推翻机制证明但足以定罪"单次观测不可作锚点"。E03-a 定性（写死三句话）：
+  ① 该样本同模式多次运行会给出 2 或 0，是不稳定样本；② merge=off 复跑同样出过 0 分，
+  本轮 2→0 不可归因于合并；③ 因此它不得作单次验收锚点，引用必须注明多跑分布。
+- **回退能力**：`ARBITER_MERGE=off` 逐字节回 v0.9.1（trace 键集合断言钉死），README §5.3 有文档。
 
 ## v0.9.1 · 2026-10-29 · 演示就绪：黑板默认启用、逐轴进度、模式可见、温度键接线
 

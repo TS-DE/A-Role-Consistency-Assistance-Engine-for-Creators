@@ -1,0 +1,382 @@
+{
+  "purpose": "任务21 §4.3：E 集走图的 ARBITER_MERGE A/B 对照（注入式，stub 生成钉死文本）",
+  "method": "17 候选 × {off,on} × 判定一轮（max_attempts=1），挂起回 ABANDON；先 off 后 on",
+  "date": "2026-10-29 13:07",
+  "judge_model": "qwen3.8-flash",
+  "rows": [
+    {
+      "id": "E01-a",
+      "gold": 0,
+      "trait": "emotional_restraint",
+      "off": {
+        "score": 0,
+        "n_violated": 4,
+        "n_claims": 0,
+        "n_cross_axis": 0,
+        "n_multi_pattern": 0,
+        "wall_ms": 24234
+      },
+      "on": {
+        "score": 0,
+        "n_violated": 3,
+        "n_claims": 3,
+        "n_cross_axis": 2,
+        "n_multi_pattern": 2,
+        "wall_ms": 18812
+      },
+      "changed": false
+    },
+    {
+      "id": "E01-b",
+      "gold": 2,
+      "trait": "emotional_restraint",
+      "off": {
+        "score": 2,
+        "n_violated": 0,
+        "n_claims": 0,
+        "n_cross_axis": 0,
+        "n_multi_pattern": 0,
+        "wall_ms": 12694
+      },
+      "on": {
+        "score": 2,
+        "n_violated": 0,
+        "n_claims": 0,
+        "n_cross_axis": 0,
+        "n_multi_pattern": 0,
+        "wall_ms": 30275
+      },
+      "changed": false
+    },
+    {
+      "id": "E02-a",
+      "gold": 0,
+      "trait": "evidence_first",
+      "off": {
+        "score": 0,
+        "n_violated": 1,
+        "n_claims": 0,
+        "n_cross_axis": 0,
+        "n_multi_pattern": 0,
+        "wall_ms": 91071
+      },
+      "on": {
+        "score": 0,
+        "n_violated": 2,
+        "n_claims": 2,
+        "n_cross_axis": 0,
+        "n_multi_pattern": 0,
+        "wall_ms": 40834
+      },
+      "changed": false
+    },
+    {
+      "id": "E02-b",
+      "gold": 2,
+      "trait": "evidence_first",
+      "off": {
+        "score": 2,
+        "n_violated": 0,
+        "n_claims": 0,
+        "n_cross_axis": 0,
+        "n_multi_pattern": 0,
+        "wall_ms": 11041
+      },
+      "on": {
+        "score": 2,
+        "n_violated": 0,
+        "n_claims": 0,
+        "n_cross_axis": 0,
+        "n_multi_pattern": 0,
+        "wall_ms": 10992
+      },
+      "changed": false
+    },
+    {
+      "id": "E03-a",
+      "gold": 2,
+      "trait": "evidence_first",
+      "off": {
+        "score": 2,
+        "n_violated": 0,
+        "n_claims": 0,
+        "n_cross_axis": 0,
+        "n_multi_pattern": 0,
+        "wall_ms": 119517
+      },
+      "on": {
+        "score": 0,
+        "n_violated": 1,
+        "n_claims": 1,
+        "n_cross_axis": 0,
+        "n_multi_pattern": 0,
+        "wall_ms": 50808
+      },
+      "changed": true
+    },
+    {
+      "id": "E03-b",
+      "gold": 2,
+      "trait": "evidence_first",
+      "off": {
+        "score": 2,
+        "n_violated": 0,
+        "n_claims": 0,
+        "n_cross_axis": 0,
+        "n_multi_pattern": 0,
+        "wall_ms": 8160
+      },
+      "on": {
+        "score": 2,
+        "n_violated": 0,
+        "n_claims": 0,
+        "n_cross_axis": 0,
+        "n_multi_pattern": 0,
+        "wall_ms": 9497
+      },
+      "changed": false
+    },
+    {
+      "id": "E04-a",
+      "gold": 0,
+      "trait": "era_consistency",
+      "off": {
+        "score": 0,
+        "n_violated": 1,
+        "n_claims": 0,
+        "n_cross_axis": 0,
+        "n_multi_pattern": 0,
+        "wall_ms": 8501
+      },
+      "on": {
+        "score": 0,
+        "n_violated": 1,
+        "n_claims": 1,
+        "n_cross_axis": 0,
+        "n_multi_pattern": 0,
+        "wall_ms": 14191
+      },
+      "changed": false
+    },
+    {
+      "id": "E04-b",
+      "gold": 2,
+      "trait": "era_consistency",
+      "off": {
+        "score": 2,
+        "n_violated": 0,
+        "n_claims": 0,
+        "n_cross_axis": 0,
+        "n_multi_pattern": 0,
+        "wall_ms": 8383
+      },
+      "on": {
+        "score": 2,
+        "n_violated": 0,
+        "n_claims": 0,
+        "n_cross_axis": 0,
+        "n_multi_pattern": 0,
+        "wall_ms": 12801
+      },
+      "changed": false
+    },
+    {
+      "id": "E05-a",
+      "gold": 2,
+      "trait": "no_glory_seeking",
+      "off": {
+        "score": 2,
+        "n_violated": 0,
+        "n_claims": 0,
+        "n_cross_axis": 0,
+        "n_multi_pattern": 0,
+        "wall_ms": 14407
+      },
+      "on": {
+        "score": 2,
+        "n_violated": 0,
+        "n_claims": 0,
+        "n_cross_axis": 0,
+        "n_multi_pattern": 0,
+        "wall_ms": 13096
+      },
+      "changed": false
+    },
+    {
+      "id": "E05-b",
+      "gold": 1,
+      "trait": "no_glory_seeking",
+      "off": {
+        "score": 1,
+        "n_violated": 1,
+        "n_claims": 0,
+        "n_cross_axis": 0,
+        "n_multi_pattern": 0,
+        "wall_ms": 27599
+      },
+      "on": {
+        "score": 1,
+        "n_violated": 1,
+        "n_claims": 1,
+        "n_cross_axis": 0,
+        "n_multi_pattern": 0,
+        "wall_ms": 13169
+      },
+      "changed": false
+    },
+    {
+      "id": "E06-a",
+      "gold": 0,
+      "trait": "voice_register",
+      "off": {
+        "score": 0,
+        "n_violated": 3,
+        "n_claims": 0,
+        "n_cross_axis": 0,
+        "n_multi_pattern": 0,
+        "wall_ms": 28554
+      },
+      "on": {
+        "score": 0,
+        "n_violated": 2,
+        "n_claims": 2,
+        "n_cross_axis": 0,
+        "n_multi_pattern": 0,
+        "wall_ms": 25889
+      },
+      "changed": false
+    },
+    {
+      "id": "E06-b",
+      "gold": 1,
+      "trait": "voice_register",
+      "off": {
+        "score": 1,
+        "n_violated": 1,
+        "n_claims": 0,
+        "n_cross_axis": 0,
+        "n_multi_pattern": 0,
+        "wall_ms": 20354
+      },
+      "on": {
+        "score": 1,
+        "n_violated": 1,
+        "n_claims": 1,
+        "n_cross_axis": 0,
+        "n_multi_pattern": 0,
+        "wall_ms": 17118
+      },
+      "changed": false
+    },
+    {
+      "id": "E06-c",
+      "gold": 2,
+      "trait": "voice_register",
+      "off": {
+        "score": 1,
+        "n_violated": 1,
+        "n_claims": 0,
+        "n_cross_axis": 0,
+        "n_multi_pattern": 0,
+        "wall_ms": 14583
+      },
+      "on": {
+        "score": 2,
+        "n_violated": 0,
+        "n_claims": 0,
+        "n_cross_axis": 0,
+        "n_multi_pattern": 0,
+        "wall_ms": 14345
+      },
+      "changed": true
+    },
+    {
+      "id": "E07-a",
+      "gold": 2,
+      "trait": "watson_rapport",
+      "off": {
+        "score": 2,
+        "n_violated": 0,
+        "n_claims": 0,
+        "n_cross_axis": 0,
+        "n_multi_pattern": 0,
+        "wall_ms": 11031
+      },
+      "on": {
+        "score": 2,
+        "n_violated": 0,
+        "n_claims": 0,
+        "n_cross_axis": 0,
+        "n_multi_pattern": 0,
+        "wall_ms": 22935
+      },
+      "changed": false
+    },
+    {
+      "id": "E07-b",
+      "gold": 1,
+      "trait": "watson_rapport",
+      "off": {
+        "score": 1,
+        "n_violated": 2,
+        "n_claims": 0,
+        "n_cross_axis": 0,
+        "n_multi_pattern": 0,
+        "wall_ms": 12283
+      },
+      "on": {
+        "score": 1,
+        "n_violated": 1,
+        "n_claims": 1,
+        "n_cross_axis": 0,
+        "n_multi_pattern": 0,
+        "wall_ms": 15419
+      },
+      "changed": false
+    },
+    {
+      "id": "E08-a",
+      "gold": 2,
+      "trait": "moral_flexibility",
+      "off": {
+        "score": 2,
+        "n_violated": 0,
+        "n_claims": 0,
+        "n_cross_axis": 0,
+        "n_multi_pattern": 0,
+        "wall_ms": 22653
+      },
+      "on": {
+        "score": 2,
+        "n_violated": 0,
+        "n_claims": 0,
+        "n_cross_axis": 0,
+        "n_multi_pattern": 0,
+        "wall_ms": 11763
+      },
+      "changed": false
+    },
+    {
+      "id": "E08-b",
+      "gold": 1,
+      "trait": "moral_flexibility",
+      "off": {
+        "score": 1,
+        "n_violated": 1,
+        "n_claims": 0,
+        "n_cross_axis": 0,
+        "n_multi_pattern": 0,
+        "wall_ms": 15406
+      },
+      "on": {
+        "score": 1,
+        "n_violated": 1,
+        "n_claims": 1,
+        "n_cross_axis": 0,
+        "n_multi_pattern": 0,
+        "wall_ms": 30278
+      },
+      "changed": false
+    }
+  ]
+}
