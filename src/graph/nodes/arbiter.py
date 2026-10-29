@@ -62,7 +62,10 @@ class Arbiter:
             "hits": len(violated),
             # failed_traits 与 simple 模式同口径：调用失败数（缺板另算，见下方 incomplete 判定）
             "failed_traits": len(failed) + len(missing),
-            "ms": sum(int(e["ms"]) for e in entries),
+            # ms 取最慢单轴 ≈ 窗口墙钟：实测 Send 真并行（2 候选 wall 11.0/14.5s vs 单轴
+            # max 10.98/14.50s），Σ 会把 cost_report 的耗时占比虚报成 3 倍（Σ=45.5/58.8s）。
+            # 单轴明细仍全量留在 board 的 ms 字段里，谁要 Σ 谁自己算。
+            "ms": max((int(e["ms"]) for e in entries), default=0),
             "prompt_chars": sum(int(e["prompt_chars"]) for e in successes),
             "reply_chars": sum(int(e["reply_chars"]) for e in successes),
         })
