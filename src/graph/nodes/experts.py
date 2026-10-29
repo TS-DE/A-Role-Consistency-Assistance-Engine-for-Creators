@@ -14,7 +14,7 @@ import time
 from typing import Any
 
 from src.graph.board import BoardEntry
-from src.judge.evaluator import TraitEvaluator
+from src.judge.evaluator import ProgressHook, TraitEvaluator
 
 FAILED_REASON_LIMIT = 200  # 失败原因截断长度：整段 traceback 进黑板会把裁决者淹死
 
@@ -22,9 +22,13 @@ FAILED_REASON_LIMIT = 200  # 失败原因截断长度：整段 traceback 进黑�
 class TraitExpert:
     """一个实例负责一条 trait；同一实例被 Send 反复调用（自身无状态，状态在 evaluator）。"""
 
-    def __init__(self, spec: dict[str, Any], evaluator: TraitEvaluator) -> None:
+    def __init__(self, spec: dict[str, Any], evaluator: TraitEvaluator,
+                 on_progress: ProgressHook | None = None) -> None:
         self._traits = spec["_traits_by_id"]
         self._evaluator = evaluator
+        # 进度优先走 evaluator（simple/黑板同一口径来源）；evaluator 没挂回调时
+        # 才用直传的这份——两条通道不会同时触发，避免一次判定打印两行。
+        self._on_progress = on_progress
 
     def __call__(self, payload: dict[str, Any]) -> dict[str, Any]:
         """LangGraph Send 的节点只收到 payload，拿不到完整 State —— 这是 Send 的契约。
@@ -41,13 +45,16 @@ class TraitExpert:
         # 未知 trait_id 也走 failed：Send 的 payload 是外部输入，契约要求本方法自身不抛
         trait = self._traits.get(trait_id) or {}
         if not trait:
+            self._report(attempt, trait_id, False, f"unknown trait: {trait_id}")
             return {"board": [self._entry_failed(trait_id, trait, attempt,
                                                  f"unknown trait: {trait_id}", started)]}
         try:
             result = self._evaluator.judge_trait(candidate, trait)
         except Exception as exc:  # noqa: BLE001 —— 契约要求：专家只准报伤亡，不准沉船
+            self._report(attempt, trait_id, False, str(exc))
             return {"board": [self._entry_failed(trait_id, trait, attempt,
                                                   str(exc)[:FAILED_REASON_LIMIT], started)]}
+        self._report(attempt, trait_id, True, "")
 
         return {"board": [BoardEntry(
             trait=trait_id,
@@ -64,6 +71,24 @@ class TraitExpert:
             ms=self._ms(started),
             attempt=attempt,
         )]}
+
+    def _report(self, attempt: int, trait_id: str, ok: bool, message: str) -> None:
+        """逐轴进度。cand_id 用 draft#<轮次>：Send 只传 payload 不传完整 State，没有候选 id；
+        闭环一次一场景，"第几稿"就是它仅有的身份，与页面时间线对得上。
+
+        两条通道互斥（见 __init__），emit_progress 内部吞回调异常，直传通道在此自行吞——
+        进度失败绝不影响判定与板面写入。
+        """
+        cand_id = f"draft#{attempt}"
+        if self._evaluator.has_progress_hook():
+            self._evaluator.emit_progress(cand_id, trait_id, ok, message)
+            return
+        if self._on_progress is None:
+            return
+        try:
+            self._on_progress(cand_id, trait_id, ok, message)
+        except Exception:  # noqa: BLE001  同上：只吞不报
+            pass
 
     @staticmethod
     def _ms(started: float) -> int:

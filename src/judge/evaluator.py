@@ -150,6 +150,20 @@ class TraitEvaluator:
                     collected[trait_id] = exc
         return [(trait_id, collected[trait_id]) for trait_id in trait_ids]
 
+    def emit_progress(self, cand_id: str, trait_id: str, ok: bool, message: str = "") -> None:
+        """供黑板模式的专家节点按轴回调进度；judge_case 内部仍走 _emit，行为不变。
+
+        回调自身的异常在这里吞掉（硬约束：进度上报失败不得影响判定结果）——
+        专家节点在 try/except 之外调用本方法，若让它冒泡就会中断整张图。
+        """
+        try:
+            self._emit(cand_id, trait_id, ok, message)
+        except Exception:  # noqa: BLE001  只吞不报：进度丢一次，好过判定结果丢一轮
+            pass
+
+    def has_progress_hook(self) -> bool:
+        return self._on_progress is not None
+
     def _emit(self, cand_id: str, trait_id: str, ok: bool, message: str) -> None:
         if self._on_progress is not None:
             self._on_progress(cand_id, trait_id, ok, message)

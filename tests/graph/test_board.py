@@ -191,6 +191,40 @@ def test_expert_failure_becomes_incomplete_not_crash() -> None:
     assert sum(1 for e in board if e["attempt"] == 1 and not e["failed"]) == 7
 
 
+# ── 任务 20 · 逐轴进度：专家发勾选，回调炸了也不许拖累判定 ────────
+def test_blackboard_emits_per_axis_progress() -> None:
+    seen: list[tuple] = []
+    graph = build_graph(SPEC, StubModel(), StubModel(), agent_mode="blackboard",
+                        on_progress=lambda *row: seen.append(row))
+    graph.invoke(new_state("华生想再去守一夜"), _config("prog1"))
+
+    assert len(seen) == 8, "8 个专家各发一行（成功分支）"
+    assert {r[1] for r in seen} == set(TRAIT_IDS), "每轴恰好一次，不重不漏"
+    assert all(r[0] == "draft#1" and r[2] is True for r in seen), \
+        "cand_id 用 draft#轮次：Send 的 payload 里没有候选 id，这是闭环里仅有的身份"
+
+
+def test_progress_reports_failure_and_swallows_hook_errors() -> None:
+    seen: list[tuple] = []
+    model = StubModel(boom_on="cc")
+    graph = build_graph(SPEC, model, model, max_attempts=1, agent_mode="blackboard",
+                        on_progress=lambda *row: seen.append(row))
+    out = _run_to_end(graph, "prog2")
+
+    fails = [r for r in seen if not r[2]]
+    assert len(fails) == 1 and fails[0][1] == "cc" and "stub down" in fails[0][3], \
+        "失败轴要报 ok=False 带原因，其余 7 轴正常报成功"
+    assert len(seen) == 8 and out["score"] == -1
+
+    def boom(*_row):
+        raise RuntimeError("进度回调自己炸了")
+
+    graph2 = build_graph(SPEC, StubModel(), StubModel(), agent_mode="blackboard",
+                         on_progress=boom)
+    out2 = graph2.invoke(new_state("华生想再去守一夜"), _config("prog3"))
+    assert out2["score"] == 2, "硬约束：进度上报失败不许影响判定——丢一次进度，好过丢一轮结果"
+
+
 if __name__ == "__main__":
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
     for t in tests:
