@@ -1,0 +1,115 @@
+{
+  "purpose": "任务20·任务4B：双模式等价性的噪声地板证据（替代 temp=0 方案——实测两温度键此前均为死键，0.0 下仍有供应商非确定性）",
+  "method": "注入式：生成侧用 stub 固定返回 dev 集 D01-a（gold=0，三句抒情），真判定模型跑闭环；每模式连跑 2 次共 4 次；max_attempts=1 隔离重写循环；挂起回 ABANDON 不污染分数",
+  "script": "agent_docs/_ab_probe2.py（gitignore 不入库）",
+  "date": "2026-10-29",
+  "expected_difference": "blackboard 节点序列多一条 fan_out；verify 条目名不变（Arbiter 与 simple 同形，下游零感知）",
+  "runs": [
+    {
+      "mode": "simple",
+      "candidate": "D01-a(dev,gold=0,emotional_restraint)",
+      "judge_model": "qwen3.8-flash",
+      "score": 0,
+      "attempt": 1,
+      "n_violated": 9,
+      "violated": [
+        "[emotional_restraint] 抒情式共情与自我情绪表露（\"我的心也在痛\"） ← \"There, there, Watson.\"",
+        "[emotional_restraint] 抒情式共情与自我情绪表露（\"我的心也在痛\"） ← \"Let it all out.\"",
+        "[emotional_restraint] 抒情式共情与自我情绪表露（\"我的心也在痛\"） ← \"I am here for you, my dear friend.\"",
+        "[voice_register] 使用家常闲聊、无意义式寒暄 ← \"There, there, Watson.\"",
+        "[voice_register] 大段抒情感慨、情绪宣泄 ← \"Let it all out.\"",
+        "[voice_register] 大段抒情感慨、情绪宣泄 ← \"I am here for you, my dear friend.\"",
+        "[watson_rapport] 温柔共情、主动安慰关怀 ← \"There, there, Watson.\"",
+        "[watson_rapport] 温柔共情、主动安慰关怀 ← \"Let it all out.\"",
+        "[watson_rapport] 温柔共情、主动安慰关怀 ← \"I am here for you, my dear friend.\""
+      ],
+      "nodes": [
+        "generate",
+        "verify",
+        "human"
+      ],
+      "verify_ms": 22581,
+      "wall_ms": 22587
+    },
+    {
+      "mode": "simple",
+      "candidate": "D01-a(dev,gold=0,emotional_restraint)",
+      "judge_model": "qwen3.8-flash",
+      "score": 0,
+      "attempt": 1,
+      "n_violated": 9,
+      "violated": [
+        "[emotional_restraint] 抒情式共情与自我情绪表露（\"我的心也在痛\"） ← \"There, there, Watson.\"",
+        "[emotional_restraint] 抒情式共情与自我情绪表露（\"我的心也在痛\"） ← \"Let it all out.\"",
+        "[emotional_restraint] 抒情式共情与自我情绪表露（\"我的心也在痛\"） ← \"I am here for you, my dear friend.\"",
+        "[voice_register] 使用家常闲聊、无意义式寒暄 ← \"There, there, Watson.\"",
+        "[voice_register] 大段抒情感慨、情绪宣泄 ← \"Let it all out.\"",
+        "[voice_register] 大段抒情感慨、情绪宣泄 ← \"I am here for you, my dear friend.\"",
+        "[watson_rapport] 温柔共情、主动安慰关怀 ← \"There, there, Watson.\"",
+        "[watson_rapport] 温柔共情、主动安慰关怀 ← \"Let it all out.\"",
+        "[watson_rapport] 温柔共情、主动安慰关怀 ← \"I am here for you, my dear friend.\""
+      ],
+      "nodes": [
+        "generate",
+        "verify",
+        "human"
+      ],
+      "verify_ms": 21530,
+      "wall_ms": 21539
+    },
+    {
+      "mode": "blackboard",
+      "candidate": "D01-a(dev,gold=0,emotional_restraint)",
+      "judge_model": "qwen3.8-flash",
+      "score": 0,
+      "attempt": 1,
+      "n_violated": 9,
+      "violated": [
+        "[emotional_restraint] 抒情式共情与自我情绪表露（\"我的心也在痛\"） ← \"There, there, Watson.\"",
+        "[emotional_restraint] 抒情式共情与自我情绪表露（\"我的心也在痛\"） ← \"Let it all out.\"",
+        "[emotional_restraint] 抒情式共情与自我情绪表露（\"我的心也在痛\"） ← \"I am here for you, my dear friend.\"",
+        "[voice_register] 使用家常闲聊、无意义式寒暄 ← \"There, there, Watson.\"",
+        "[voice_register] 大段抒情感慨、情绪宣泄 ← \"Let it all out.\"",
+        "[voice_register] 使用家常闲聊、无意义式寒暄 ← \"I am here for you, my dear friend.\"",
+        "[watson_rapport] 温柔共情、主动安慰关怀 ← \"There, there, Watson.\"",
+        "[watson_rapport] 温柔共情、主动安慰关怀 ← \"Let it all out.\"",
+        "[watson_rapport] 温柔共情、主动安慰关怀 ← \"I am here for you, my dear friend.\""
+      ],
+      "nodes": [
+        "generate",
+        "fan_out",
+        "verify",
+        "human"
+      ],
+      "verify_ms": 19190,
+      "wall_ms": 19207
+    },
+    {
+      "mode": "blackboard",
+      "candidate": "D01-a(dev,gold=0,emotional_restraint)",
+      "judge_model": "qwen3.8-flash",
+      "score": 0,
+      "attempt": 1,
+      "n_violated": 9,
+      "violated": [
+        "[emotional_restraint] 抒情式共情与自我情绪表露（\"我的心也在痛\"） ← \"There, there, Watson.\"",
+        "[emotional_restraint] 抒情式共情与自我情绪表露（\"我的心也在痛\"） ← \"Let it all out.\"",
+        "[emotional_restraint] 抒情式共情与自我情绪表露（\"我的心也在痛\"） ← \"I am here for you, my dear friend.\"",
+        "[voice_register] 使用家常闲聊、无意义式寒暄 ← \"There, there, Watson.\"",
+        "[voice_register] 大段抒情感慨、情绪宣泄 ← \"Let it all out.\"",
+        "[voice_register] 以\"我\"为中心替对方做人生决定 / 宣誓式台词（大男主腔） ← \"I am here for you, my dear friend.\"",
+        "[watson_rapport] 温柔共情、主动安慰关怀 ← \"There, there, Watson.\"",
+        "[watson_rapport] 温柔共情、主动安慰关怀 ← \"Let it all out.\"",
+        "[watson_rapport] 温柔共情、主动安慰关怀 ← \"I am here for you, my dear friend.\""
+      ],
+      "nodes": [
+        "generate",
+        "fan_out",
+        "verify",
+        "human"
+      ],
+      "verify_ms": 19279,
+      "wall_ms": 19291
+    }
+  ]
+}
